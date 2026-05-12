@@ -1,0 +1,30 @@
+# HVAC Control Tower — Configuration
+# Model parameters for L3 forecast-svc
+
+lightgbm:
+  n_estimators: 1000
+  max_depth: 7
+  learning_rate: 0.03
+  subsample: 0.85
+  colsample_bytree: 0.85
+  min_child_samples: 10
+  reg_alpha: 0.05
+  reg_lambda: 0.5
+  early_stopping_rounds: 50
+  quantiles: [0.50, 0.75, 0.90]
+  cv_folds: 5
+
+croston:
+  alpha: 0.1
+  min_demand_periods: 12
+
+pipeline:
+  data_dir: data/raw
+  output_dir: data/processed
+  results_dir: data/outputs
+  feedback_dir: data/feedback
+  model_dir: models
+  train_ratio: 0.80
+  val_ratio: 0.10
+  test_ratio: 0.10
+  seed: 42

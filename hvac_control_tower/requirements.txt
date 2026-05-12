@@ -1,0 +1,32 @@
+# HVAC Cognitive Control Tower - Dependencies
+# Core
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+pyarrow>=12.0.0
+pyyaml>=6.0
+
+# L3 Intelligence - Forecasting
+lightgbm>=4.0.0
+xgboost>=2.0.0
+statsmodels>=0.14.0
+
+# L4 Policy - Optimization
+pulp>=2.7.0
+scipy>=1.11.0
+
+# L5 Orchestration - API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+
+# L2 Digital Twin - Graph
+networkx>=3.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+hypothesis>=6.90.0
+httpx>=0.25.0
+
+# Data
+openpyxl>=3.1.0
