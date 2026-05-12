@@ -1,0 +1,24 @@
+xgboost:
+  n_estimators: 500
+  max_depth: 5
+  learning_rate: 0.05
+  subsample: 0.8
+  colsample_bytree: 0.8
+  min_child_weight: 5
+  reg_alpha: 0.1
+  reg_lambda: 1.0
+  early_stopping_rounds: 30
+  quantiles: [0.50, 0.75, 0.90]
+  cv_folds: 5
+
+prophet:
+  seasonality_mode: multiplicative
+  changepoint_prior_scale: 0.05
+  seasonality_prior_scale: 10.0
+  regressors: [Max_Temp_C, Festive_Multiplier]
+
+lasso_cost:
+  alpha: 0.1
+  max_iter: 1000
+  cv_folds: 5
+  features: [Units_Shipped, Distance_KM]

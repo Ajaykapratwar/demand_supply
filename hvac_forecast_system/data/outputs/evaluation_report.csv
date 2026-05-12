@@ -1,0 +1,4 @@
+label,MAE,MSE,RMSE,MAPE_%,R2,RMSE_%,MAE_%,pinball_loss,quantile
+XGBoost P50,4833.222,33262113.35,5767.332,14.94,0.6502,17.478,14.647,,
+XGBoost P75,,,,,,,,2548.075,0.75
+XGBoost P90,,,,,,,,1511.032,0.9

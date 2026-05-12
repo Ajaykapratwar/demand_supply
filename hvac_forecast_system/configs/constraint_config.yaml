@@ -1,0 +1,11 @@
+allocation:
+  sla_target: 0.95
+  carrying_cost_rate: 0.02
+  stockout_penalty_inr: 5000
+  lead_time_days: 7
+  min_days_of_supply: 7
+  max_aged_stock_ratio: 0.30
+
+safety_stock:
+  method: quantile_gap          # P90 - P50
+  min_buffer_units: 50

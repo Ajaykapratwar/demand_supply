@@ -1,0 +1,15 @@
+pipeline:
+  data_dir: data/raw
+  output_dir: data/processed
+  results_dir: data/outputs
+  model_dir: models
+
+split:
+  train_ratio: 0.80
+  val_ratio: 0.10
+  test_ratio: 0.10
+  method: chronological
+
+run:
+  seed: 42
+  verbose: true
