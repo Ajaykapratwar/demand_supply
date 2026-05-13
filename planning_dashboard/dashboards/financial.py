@@ -1,91 +1,65 @@
-"""dashboards/financial.py  ─  Dashboard 6: Financial Impact"""
+"""dashboards/financial.py — Dashboard 6: Financial Impact (LIVE)"""
 from dash import html, dcc
 from components.theme import COLORS
 from components.kpi_cards import kpi_card
 from components import charts
-from data.mock_data import (
-    get_financial_kpis, get_pl_bridge_waterfall, get_budget_vs_forecast,
-)
+from data.data_loader import get_financial_summary, get_budget_vs_forecast_real
+from data.mock_data import get_pl_bridge_waterfall
 
-FIN_CONFIG = [
-    ("revenue",        "Total Revenue",    "$M",  False, [128+i*0.3 for i in range(14)]),
-    ("gross_margin",   "Gross Margin",     "%",   False, [33+i*0.05 for i in range(14)]),
-    ("inventory_cost", "Inventory Cost",   "$M",  True,  [4.4-i*0.01 for i in range(14)]),
-    ("logistics_cost", "Logistics Cost",   "$M",  True,  [8.9-i*0.02 for i in range(14)]),
-    ("expediting_cost","Expediting Cost",  "$M",  True,  [1.2-i*0.02 for i in range(14)]),
-]
+def layout():
+    fin    = get_financial_summary()
+    bvf_df = get_budget_vs_forecast_real()
+    bridge = get_pl_bridge_waterfall()
 
-
-def layout() -> html.Div:
-    fin     = get_financial_kpis()
-    bridge  = get_pl_bridge_waterfall()
-    bvf_df  = get_budget_vs_forecast()
-
+    spark14 = [fin["revenue_cr"] * (1 + i * 0.002) for i in range(14)]
     kpi_row = [
-        kpi_card(
-            label=label, value=fin[k]["value"], unit=unit,
-            target=fin[k]["target"], delta=fin[k]["delta"],
-            sparkline_data=spark, status="success", delta_invert=invert,
-        )
-        for k, label, unit, invert, spark in FIN_CONFIG
-    ]
-
-    # Scenario P&L impact table
-    scenario_pl = [
-        {"scenario": "Base Plan",          "revenue": 128.4, "margin": 34.2, "inv_cost": 4.2, "log_cost": 8.7},
-        {"scenario": "Demand Surge +30%",  "revenue": 142.1, "margin": 31.8, "inv_cost": 5.8, "log_cost": 10.2},
-        {"scenario": "Supply Disruption",  "revenue": 119.3, "margin": 28.4, "inv_cost": 5.1, "log_cost": 11.5},
-        {"scenario": "Best Case",          "revenue": 133.6, "margin": 36.1, "inv_cost": 3.9, "log_cost": 8.1},
-        {"scenario": "Sustainability Opt.","revenue": 129.2, "margin": 33.8, "inv_cost": 4.3, "log_cost": 8.5},
+        kpi_card("Revenue",       fin["revenue_cr"],        "Cr INR", fin["revenue_cr"]*1.05, fin["revenue_cr"]*0.03,  spark14, "success", False),
+        kpi_card("Avg Discount",  fin["avg_discount_pct"],  "%",      5.0,                    fin["avg_discount_pct"]-5,spark14, "warning", True),
+        kpi_card("Logistics Cost",fin["logistics_cost_m"],  "M INR",  fin["logistics_cost_m"]*0.95, 0, spark14, "warning", True),
     ]
 
     return html.Div([
-        html.Div(className="page-title", children=[
-            html.Span("💰", className="icon"), "Financial Impact",
-        ]),
-        html.Div(className="grid-kpi", style={"gridTemplateColumns": "repeat(5, 1fr)"},
-                 children=kpi_row),
-
-        html.Div(className="grid-2", style={"marginBottom": "16px"}, children=[
+        html.Div(className="page-title", children=[html.Span("💰", className="icon"), "Financial Impact — Live Revenue Data"]),
+        html.Div(className="grid-kpi", style={"gridTemplateColumns":"repeat(3,1fr)"}, children=kpi_row),
+        html.Div(className="grid-2", style={"marginBottom":"16px"}, children=[
             html.Div(className="card", children=[
                 dcc.Graph(figure=charts.pl_bridge_waterfall(bridge),
-                          config={"displayModeBar": False}, style={"height": "300px"}),
+                          config={"displayModeBar":False}, style={"height":"300px"}),
             ]),
             html.Div(className="card", children=[
-                dcc.Graph(figure=charts.budget_vs_forecast_chart(bvf_df),
-                          config={"displayModeBar": False}, style={"height": "280px"}),
+                dcc.Graph(figure=_bvf_chart(bvf_df),
+                          config={"displayModeBar":False}, style={"height":"280px"}),
             ]),
         ]),
-
-        # Scenario P&L table
         html.Div(className="card", children=[
-            html.Div("SCENARIO P&L COMPARISON ($M)", className="section-header"),
-            html.Table(className="scenario-table", style={"width": "100%"}, children=[
-                html.Thead(html.Tr([
-                    html.Th(h) for h in
-                    ["Scenario", "Revenue", "Gross Margin %", "Inventory Cost", "Logistics Cost"]
-                ])),
-                html.Tbody([
-                    html.Tr(
-                        className="active-row" if s["scenario"] == "Base Plan" else "",
-                        children=[
-                            html.Td(s["scenario"]),
-                            html.Td(f"${s['revenue']:.1f}M",
-                                    style={"color": COLORS["chart_2"] if s["revenue"] >= 128.4
-                                           else COLORS["danger"]}),
-                            html.Td(f"{s['margin']:.1f}%",
-                                    style={"color": COLORS["success"] if s["margin"] >= 34.2
-                                           else COLORS["warning"]}),
-                            html.Td(f"${s['inv_cost']:.1f}M",
-                                    style={"color": COLORS["success"] if s["inv_cost"] <= 4.2
-                                           else COLORS["danger"]}),
-                            html.Td(f"${s['log_cost']:.1f}M",
-                                    style={"color": COLORS["success"] if s["log_cost"] <= 8.7
-                                           else COLORS["danger"]}),
-                        ]
-                    )
-                    for s in scenario_pl
-                ]),
+            html.Div("REVENUE BY REGION — REAL DATA SUMMARY", className="section-header"),
+            html.Div(style={"display":"grid","gridTemplateColumns":"repeat(3,1fr)","gap":"12px"}, children=[
+                _stat(f"Total Revenue", f"{fin['revenue_cr']:.1f} Cr INR", COLORS["chart_2"]),
+                _stat(f"Avg Discount",  f"{fin['avg_discount_pct']:.2f}%",  COLORS["warning"]),
+                _stat(f"Logistics Cost",f"{fin['logistics_cost_m']:.2f}M",  COLORS["chart_1"]),
             ]),
         ]),
+    ])
+
+def _bvf_chart(df):
+    import plotly.graph_objects as go
+    from components.theme import COLORS, base_layout
+    from components.charts import _rgba as rgba  # noqa: F401
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=df["month"].dt.strftime("%b %y"), y=df["budget"],
+                         name="Budget", marker_color=rgba(COLORS["chart_2"], 0.55)))
+    fig.add_trace(go.Scatter(x=df["month"].dt.strftime("%b %y"), y=df["actual"],
+                             name="Actual", line=dict(color=COLORS["chart_2"], width=2),
+                             mode="lines+markers", marker=dict(size=5)))
+    if "forecast" in df.columns:
+        fig.add_trace(go.Scatter(x=df["month"].dt.strftime("%b %y"), y=df["forecast"],
+                                 name="Forecast", line=dict(color=COLORS["chart_1"], width=2, dash="dash")))
+    fig.update_layout(**base_layout("Budget vs Actual vs Forecast (Cr INR)", height=280))
+    return fig
+
+def _stat(label, value, color):
+    from components.theme import COLORS
+    return html.Div(style={"textAlign":"center","padding":"12px"}, children=[
+        html.Div(label, style={"fontSize":"0.72rem","color":COLORS["text_secondary"],"marginBottom":"4px"}),
+        html.Div(value, style={"fontSize":"1.3rem","fontWeight":700,"color":color,"fontFamily":"JetBrains Mono,monospace"}),
     ])

@@ -389,7 +389,7 @@ def risk_score_gauge(score: float, supplier: str) -> go.Figure:
 
 
 def risk_probability_impact_matrix(df: pd.DataFrame) -> go.Figure:
-    cat_colors = {c: CHART_COLORS[i] for i, c in enumerate(df["category"].unique())}
+    cat_colors = {c: CHART_COLORS[i % len(CHART_COLORS)] for i, c in enumerate(df["category"].unique())}
     fig = go.Figure()
     for cat in df["category"].unique():
         d = df[df["category"] == cat]
