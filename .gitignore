@@ -3,3 +3,12 @@ hvac_forecast_system/.pytest_cache
 hvac_forecast_system/.venv
 hvac_forecast_system/.env
 hvac_forecast_system/src/__pycache__
+venv/
+venv/*
+!venv/README.md
+!venv/pyvenv.cfg
+venv/Lib/
+venv/Include/
+venv/Scripts/
+venv/share/
+venv/bin/

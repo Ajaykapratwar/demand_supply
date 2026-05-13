@@ -1,0 +1,112 @@
+/* assets/custom.css — Dark theme polish for PlanIQ Dashboard */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', sans-serif !important;
+    background-color: #0d1117 !important;
+    color: #e6edf3 !important;
+    margin: 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0d1117; }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #58a6ff55; }
+
+/* Dropdowns dark overrides */
+.dark-dropdown .Select-control,
+.dark-dropdown .Select-menu-outer {
+    background-color: #161b22 !important;
+    border-color: #30363d !important;
+    color: #e6edf3 !important;
+}
+.dark-dropdown .Select-value-label { color: #e6edf3 !important; }
+.dark-dropdown .Select-placeholder { color: #8b949e !important; }
+.dark-dropdown .is-focused .Select-control { border-color: #58a6ff !important; }
+.dark-dropdown .Select-option { background-color: #161b22 !important; color: #e6edf3 !important; }
+.dark-dropdown .Select-option.is-focused { background-color: #1c2128 !important; }
+.Select-arrow { border-top-color: #8b949e !important; }
+
+/* Slider rail */
+.rc-slider-rail { background-color: #30363d !important; }
+.rc-slider-handle { border-color: #58a6ff !important; }
+.rc-slider-track { background-color: #58a6ff !important; }
+
+/* Nav links active state */
+.nav-link.active {
+    color: #58a6ff !important;
+    background-color: #58a6ff18 !important;
+    border-left: 3px solid #58a6ff !important;
+}
+.nav-link:hover {
+    color: #e6edf3 !important;
+    background-color: #1c2128 !important;
+}
+
+/* Card hover lift */
+.card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+}
+
+/* Input dark */
+.form-control {
+    background-color: #161b22 !important;
+    border-color: #30363d !important;
+    color: #e6edf3 !important;
+}
+.form-control:focus {
+    border-color: #58a6ff !important;
+    box-shadow: 0 0 0 3px #58a6ff22 !important;
+    background-color: #161b22 !important;
+}
+.form-control::placeholder { color: #8b949e !important; }
+
+/* Progress bars */
+.progress { background-color: #30363d !important; }
+
+/* List group */
+.list-group-item { background-color: transparent !important; border-color: #30363d !important; }
+
+/* Navbar brand */
+.navbar { padding: 0.5rem 1rem !important; }
+
+/* Page content padding */
+#page-content {
+    padding: 24px 28px;
+    min-height: calc(100vh - 60px);
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Shell layout */
+#app-shell {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    flex-direction: column;
+}
+#main-area {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Copilot toggle button */
+#copilot-toggle-btn {
+    position: fixed;
+    right: 16px;
+    bottom: 24px;
+    z-index: 999;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    font-size: 1.3rem;
+    box-shadow: 0 4px 16px rgba(88, 166, 255, 0.4);
+}
+
+/* Table styles */
+.dash-table-container .dash-spreadsheet-container { background: #1c2128 !important; }
