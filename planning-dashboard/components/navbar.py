@@ -1,7 +1,7 @@
 """components/navbar.py — Top nav bar + horizon/region dropdowns"""
 import dash_bootstrap_components as dbc
 from dash import dcc, html
-from config import COLORS, NAV_ITEMS, HORIZONS, REGIONS, BUSINESS_UNITS
+from config import COLORS, NAV_ITEMS, HORIZONS, REGIONS, CATEGORIES
 
 
 _DROPDOWN_STYLE = {
@@ -66,12 +66,12 @@ def build_navbar():
                     ),
                 ], style={"marginRight": "16px"}),
 
-                # Business Unit
+                # Category
                 html.Div([
-                    html.Div("BUSINESS UNIT", style=_LABEL_STYLE),
+                    html.Div("CATEGORY", style=_LABEL_STYLE),
                     dcc.Dropdown(
-                        id="filter-bu",
-                        options=[{"label": b, "value": b} for b in BUSINESS_UNITS],
+                        id="filter-category",
+                        options=[{"label": b, "value": b} for b in CATEGORIES],
                         value="All",
                         clearable=False,
                         style=_DROPDOWN_STYLE,
@@ -92,8 +92,9 @@ def build_navbar():
             html.Div([
                 html.Span("🔔", style={"fontSize": "1.1rem", "cursor": "pointer",
                                         "color": COLORS["text_secondary"], "marginRight": "16px"}),
-                html.Span("👤 SC Manager",
-                          style={"fontSize": "0.82rem", "color": COLORS["text_secondary"]}),
+                html.Span("👤 SC Manager", id="nav-user-display",
+                          style={"fontSize": "0.82rem", "color": COLORS["text_secondary"], "marginRight": "12px"}),
+                dbc.Button("Logout", id="logout-btn", size="sm", color="secondary", outline=True),
             ], style={"display": "flex", "alignItems": "center"}),
 
         ], fluid=True, style={"display": "flex", "justifyContent": "space-between",

@@ -5,9 +5,9 @@ Layout shell (blueprint §3.6):
 """
 import dash
 import dash_bootstrap_components as dbc
-from dash import dcc, html, Input, Output, State, callback
+from dash import dcc, html, Input, Output, State, callback, ctx, no_update
 
-from config import COLORS
+from config import COLORS, USERS
 from components.navbar import build_navbar, build_sidebar
 from components.copilot import build_copilot_panel, _CANNED_RESPONSES, _response_card
 
@@ -29,12 +29,26 @@ app.layout = html.Div([
     dcc.Store(id="global-filter-store", storage_type="memory", data={
         "horizon":      "Tactical (1-12m)",
         "region":       "Global",
-        "businessUnit": "All",
+        "category":     "All",
         "scenario":     None,
     }),
     dcc.Store(id="copilot-open-store", data=True),
+    dcc.Store(id="auth-store", storage_type="memory", data={"authenticated": False, "role": None, "username": None}),
 
-    # Top Nav
+    # Login Overlay
+    html.Div(id="login-overlay", style={"display": "flex", "justifyContent": "center", "alignItems": "center", "height": "100vh", "backgroundColor": COLORS["background"]}, children=[
+        html.Div(style={"padding": "40px", "backgroundColor": COLORS["surface"], "borderRadius": "12px", "width": "400px", "boxShadow": "0 8px 32px rgba(0,0,0,0.5)"}, children=[
+            html.H3("PlanIQ Login", style={"color": COLORS["text_primary"], "marginBottom": "24px"}),
+            dbc.Input(id="login-username", placeholder="Username (e.g. scmanager)", type="text", style={"marginBottom": "16px", "backgroundColor": COLORS["background"], "color": COLORS["text_primary"], "border": "none"}),
+            dbc.Input(id="login-password", placeholder="Password (e.g. sc123)", type="password", style={"marginBottom": "24px", "backgroundColor": COLORS["background"], "color": COLORS["text_primary"], "border": "none"}),
+            dbc.Button("Login", id="login-btn", color="primary", style={"width": "100%", "marginBottom": "16px"}),
+            html.Div(id="login-error", style={"marginTop": "16px"}),
+        ])
+    ]),
+
+    # Dashboard Shell
+    html.Div(id="dashboard-shell", style={"display": "none"}, children=[
+        # Top Nav
     build_navbar(),
 
     # Body
@@ -68,31 +82,75 @@ app.layout = html.Div([
         "height": "calc(100vh - 60px)",
     }),
 
-    # Copilot FAB toggle
-    dbc.Button(
-        "🤖", id="copilot-toggle-btn", color="primary", size="sm",
-        style={
-            "position": "fixed", "right": "16px", "bottom": "24px", "zIndex": "999",
-            "borderRadius": "50%", "width": "48px", "height": "48px",
-            "fontSize": "1.3rem", "boxShadow": "0 4px 16px rgba(88,166,255,0.4)",
-            "display": "flex", "alignItems": "center", "justifyContent": "center",
-        },
-    ),
+        # Copilot FAB toggle
+        dbc.Button(
+            "🤖", id="copilot-toggle-btn", color="primary", size="sm",
+            style={
+                "position": "fixed", "right": "16px", "bottom": "24px", "zIndex": "999",
+                "borderRadius": "50%", "width": "48px", "height": "48px",
+                "fontSize": "1.3rem", "boxShadow": "0 4px 16px rgba(88,166,255,0.4)",
+                "display": "flex", "alignItems": "center", "justifyContent": "center",
+            },
+        ),
+    ])
 ], style={"backgroundColor": COLORS["background"], "fontFamily": "Inter, sans-serif"})
 
 
 # ── Callbacks ─────────────────────────────────────────────────────────────────
 
 @callback(
+    Output("auth-store",       "data"),
+    Output("login-overlay",    "style"),
+    Output("dashboard-shell",  "style"),
+    Output("login-error",      "children"),
+    Output("nav-user-display", "children"),
+    Input("login-btn",  "n_clicks"),
+    Input("logout-btn", "n_clicks"),
+    State("login-username", "value"),
+    State("login-password", "value"),
+    State("auth-store", "data"),
+    prevent_initial_call=True,
+)
+def handle_auth(login_clicks, logout_clicks, username, password, auth):
+    triggered = ctx.triggered_id
+    SHOW = {"display": "block"}
+    HIDE = {"display": "none"}
+    SHOW_FLEX = {"display": "flex", "justifyContent": "center", "alignItems": "center", "height": "100vh", "backgroundColor": COLORS["background"]}
+
+    if triggered == "logout-btn":
+        return (
+            {"authenticated": False, "role": None, "username": None},
+            SHOW_FLEX, HIDE, no_update, [html.Span("👤 Guest")]
+        )
+
+    uname = (username or "").strip().lower()
+    uinfo = USERS.get(uname)
+    if uinfo and uinfo["password"] == (password or "").strip():
+        role = uinfo["role"]
+        return (
+            {"authenticated": True, "role": role, "username": uname},
+            HIDE, SHOW, "",
+            [html.Span(f"👤 {role}")]
+        )
+    else:
+        err = html.Div("❌ Invalid credentials. Try scmanager / sc123", style={
+            "background": "#ff4d4d22", "color": "#ff4d4d",
+            "border": "1px solid #ff4d4d55", "borderRadius": "6px",
+            "padding": "8px 12px", "fontSize": "0.8rem",
+        })
+        return (auth, SHOW_FLEX, HIDE, err, no_update)
+
+
+@callback(
     Output("global-filter-store", "data"),
     Input("filter-horizon", "value"),
     Input("filter-region", "value"),
-    Input("filter-bu", "value"),
+    Input("filter-category", "value"),
     State("global-filter-store", "data"),
     prevent_initial_call=True,
 )
-def update_global_store(horizon, region, bu, current):
-    current.update({"horizon": horizon, "region": region, "businessUnit": bu})
+def update_global_store(horizon, region, category, current):
+    current.update({"horizon": horizon, "region": region, "category": category})
     return current
 
 

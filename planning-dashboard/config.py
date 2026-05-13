@@ -75,11 +75,17 @@ TYPOGRAPHY = {
 # Planning horizons
 HORIZONS = ["Operational (0-4w)", "Tactical (1-12m)", "Strategic (12-36m+)"]
 
-# Regions
-REGIONS = ["Global", "APAC", "EMEA", "Americas", "SEA"]
+# Credentials
+USERS = {
+    "scmanager": {"password": "sc123",    "role": "SC Manager"},
+    "admin":     {"password": "admin123", "role": "Admin"},
+}
 
-# Business units
-BUSINESS_UNITS = ["All", "Consumer Goods", "Industrial", "Healthcare", "Retail"]
+# Regions (from data_loader.py)
+REGIONS = ["Global", "North", "South", "East", "West", "Central"]
+
+# Categories (replacing Business Units)
+CATEGORIES = ["All", "Split", "Window", "Portable", "Cassette", "Tower", "Central"]
 
 # Dashboard nav items
 NAV_ITEMS = [
