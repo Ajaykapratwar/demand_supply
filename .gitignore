@@ -12,3 +12,5 @@ venv/Include/
 venv/Scripts/
 venv/share/
 venv/bin/
+hvac_control_tower/.env
+__pycache__/
