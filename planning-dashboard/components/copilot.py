@@ -52,16 +52,17 @@ def build_copilot_panel():
         # Header
         html.Div([
             html.Span("🤖", style={"fontSize": "1rem", "marginRight": "6px"}),
-            html.Span("AI Copilot", style={
+            html.Span("Financial Copilot", style={
                 "fontWeight": "700", "fontSize": "0.9rem", "color": COLORS["text_primary"],
             }),
-            html.Span(" Beta", style={
+            html.Span(" Llama 3", style={
                 "fontSize": "0.62rem", "color": COLORS["accent"],
                 "border": f"1px solid {COLORS['accent']}", "borderRadius": "4px",
                 "padding": "1px 5px", "marginLeft": "8px",
             }),
         ], style={"display": "flex", "alignItems": "center", "padding": "12px 14px",
                    "borderBottom": f"1px solid {COLORS['border']}"}),
+
 
         # Narrative brief (always shown)
         html.Div([

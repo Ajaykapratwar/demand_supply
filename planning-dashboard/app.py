@@ -177,32 +177,63 @@ def toggle_copilot(n, is_open):
     prevent_initial_call=True,
 )
 def handle_copilot_query(ask_clicks, stockout_clicks, forecast_clicks, scenario_clicks, query):
+    import requests
     ctx = dash.callback_context
     if not ctx.triggered:
         return [_response_card(_CANNED_RESPONSES["default"])]
 
     trigger = ctx.triggered[0]["prop_id"]
+    query_text = ""
+    
     if "stockout" in trigger:
-        resp = _CANNED_RESPONSES["stockout"]
+        query_text = "What is the current stockout risk?"
     elif "forecast" in trigger:
-        resp = _CANNED_RESPONSES["forecast"]
+        query_text = "How is the forecast accuracy?"
     elif "scenario" in trigger:
-        resp = _CANNED_RESPONSES["scenario"]
+        query_text = "Run demand surge scenario (+20%)"
     elif query:
-        # Keyword matching for free-text queries
-        q = query.lower()
-        if any(w in q for w in ["stock", "shortage", "out"]):
-            resp = _CANNED_RESPONSES["stockout"]
-        elif any(w in q for w in ["forecast", "accuracy", "mape", "wape"]):
-            resp = _CANNED_RESPONSES["forecast"]
-        elif any(w in q for w in ["scenario", "surge", "demand", "simulate"]):
-            resp = _CANNED_RESPONSES["scenario"]
-        else:
-            resp = _CANNED_RESPONSES["default"]
+        query_text = query
     else:
-        resp = _CANNED_RESPONSES["default"]
-
-    return [_response_card(resp)]
+        return [_response_card(_CANNED_RESPONSES["default"])]
+        
+    try:
+        # Call the new Financial Copilot endpoint
+        resp = requests.post("http://localhost:8000/copilot/chat", json={
+            "user_message": query_text,
+            "active_dashboard": "Dashboard 6",
+            "active_scenario": "Baseline",
+            "user_role": "CFO",
+            "region_filter": "GLOBAL"
+        }, timeout=10)
+        
+        if resp.status_code == 200:
+            data = resp.json()
+            llm_text = data.get("response", "")
+            citations = data.get("citations", [])
+            model_used = data.get("model_used", "cache")
+            
+            # Format the response
+            formatted_text = f"{llm_text}\n\n**Citations:** {', '.join(citations)}\n**Model:** {model_used}"
+            
+            return [_response_card({
+                "text": formatted_text,
+                "badge_color": COLORS["success"]
+            })]
+    except Exception as e:
+        print(f"Backend error: {e}")
+        
+    # Fallback to canned responses if backend fails
+    if any(w in query_text.lower() for w in ["stock", "shortage", "out"]):
+        return [_response_card(_CANNED_RESPONSES["stockout"])]
+    elif any(w in query_text.lower() for w in ["forecast", "accuracy", "mape", "wape"]):
+        return [_response_card(_CANNED_RESPONSES["forecast"])]
+    elif any(w in query_text.lower() for w in ["scenario", "surge", "demand", "simulate"]):
+        return [_response_card(_CANNED_RESPONSES["scenario"])]
+        
+    return [_response_card({
+        "text": f"Copilot backend unavailable. Raw input: {query_text}",
+        "badge_color": COLORS["danger"]
+    })]
 
 
 # ── Run ───────────────────────────────────────────────────────────────────────

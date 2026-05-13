@@ -10,11 +10,15 @@ from pydantic import BaseModel, Field
 from typing import Optional
 import numpy as np
 
+from services.tower_svc.routers.financial_copilot import router as copilot_router
+
 app = FastAPI(
     title="HVAC Cognitive Control Tower",
     description="Five-layer demand-supply orchestration platform",
     version="1.0.0",
 )
+
+app.include_router(copilot_router)
 
 
 # === Request/Response Models ===
