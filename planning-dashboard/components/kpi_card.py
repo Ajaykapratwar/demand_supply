@@ -74,8 +74,32 @@ def kpi_card(title: str, value: str, target: str, delta: str,
     })
 
 
-def kpi_row(kpi_list: list, cols: int = 3) -> html.Div:
-    """Lay out a list of kpi_card() dicts into a responsive Bootstrap row."""
+def kpi_row(kpi_list, cols: int = 3) -> html.Div:
+    """Lay out KPI cards into a responsive Bootstrap row.
+
+    Accepts either:
+    - list of dicts: {title, value, target, delta, trend, status}
+    - dict of dicts: {label: {value, target, delta, unit, status, spark}} as
+      returned by every data_loader KPI function.
+    """
+    if isinstance(kpi_list, dict):
+        # Normalise data_loader format → kpi_card kwargs
+        normalised = []
+        for label, kpi in kpi_list.items():
+            v = kpi.get("value", 0) or 0
+            t = kpi.get("target", 0) or 0
+            d = kpi.get("delta", 0) or 0
+            u = kpi.get("unit", "")
+            normalised.append({
+                "title":  label,
+                "value":  f"{v:,.2f}{u}" if isinstance(v, float) else f"{v}{u}",
+                "target": f"{t:,.2f}{u}" if isinstance(t, float) else f"{t}{u}",
+                "delta":  f"{d:+.2f}{u}" if isinstance(d, (int, float)) else str(d),
+                "trend":  kpi.get("spark", [v] * 14),
+                "status": kpi.get("status", "info"),
+            })
+        kpi_list = normalised
+
     cards = [kpi_card(**k, id_suffix=str(i)) for i, k in enumerate(kpi_list)]
     width = max(12 // cols, 2)
     return dbc.Row([

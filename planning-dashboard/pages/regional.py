@@ -34,12 +34,12 @@ layout = html.Div([
     html.H5("Regional Planning", style={"color": COLORS["text_primary"], "fontWeight": "700", "marginBottom": "4px"}),
     html.Div("Choropleth OTIF map • Region vs plan • Local scenario adjustments",
              style={"color": COLORS["text_secondary"], "fontSize": "0.83rem", "marginBottom": "20px"}),
-    dcc.Loading(id="loading-regional-cards", type="fade", color=COLORS["primary"],
+    dcc.Loading(id="loading-regional-cards", type="default", color=COLORS["primary"],
                 children=html.Div(id="regional-cards-container", className="mb-3")),
     dbc.Row([
-        dbc.Col(dcc.Loading(id="loading-choro", type="fade", color=COLORS["primary"],
+        dbc.Col(dcc.Loading(id="loading-choro", type="default", color=COLORS["primary"],
                             children=dcc.Graph(id="choro-map", config={"displayModeBar": False})), md=7, className="mb-3"),
-        dbc.Col(dcc.Loading(id="loading-rvp", type="fade", color=COLORS["primary"],
+        dbc.Col(dcc.Loading(id="loading-rvp", type="default", color=COLORS["primary"],
                             children=dcc.Graph(id="rvp-bar", config={"displayModeBar": False})), md=5, className="mb-3"),
     ]),
     dbc.Card([
@@ -74,9 +74,7 @@ layout = html.Div([
     Input("global-filter-store", "data")
 )
 def update_regional_page(filter_data):
-    if not filter_data:
-        filter_data = "{}"
-    filters = json.loads(filter_data)
+    filters = filter_data if isinstance(filter_data, dict) else {}
     region = filters.get("region", "Global")
     category = filters.get("category", "All")
     
@@ -99,8 +97,8 @@ def update_regional_page(filter_data):
             colorscale=[[0.0, COLORS["danger"]], [0.5, COLORS["warning"]], [1.0, COLORS["success"]]],
             zmin=85, zmax=100, text=_reg["region"],
             hovertemplate="<b>%{text}</b><br>OTIF: %{z:.1f}%<extra></extra>",
-            colorbar=dict(title="OTIF %", tickfont=dict(color=COLORS["text_secondary"]),
-                          titlefont=dict(color=COLORS["text_secondary"]),
+            colorbar=dict(title=dict(text="OTIF %", font=dict(color=COLORS["text_secondary"])),
+                          tickfont=dict(color=COLORS["text_secondary"]),
                           bgcolor=COLORS["card"], bordercolor=COLORS["border"]),
             marker=dict(line=dict(color=COLORS["border"], width=0.5)),
         ))

@@ -85,8 +85,8 @@ def update_operational_page(filter_data):
         colorscale=[[0.0, COLORS["danger"]], [0.4, COLORS["warning"]],
                     [0.6, "#ffffff"], [0.8, COLORS["success"]], [1.0, "#1a6640"]],
         zmin=-10000, zmax=10000,
-        colorbar=dict(title="Units Gap", tickfont=dict(color=COLORS["text_secondary"]),
-                      titlefont=dict(color=COLORS["text_secondary"])),
+        colorbar=dict(title=dict(text="Units Gap", font=dict(color=COLORS["text_secondary"])),
+                      tickfont=dict(color=COLORS["text_secondary"])),
         hovertemplate="Region: %{y}<br>Week: %{x}<br>Balance: %{z:.0f} units<extra></extra>",
     ))
     apply_dark_layout(heatmap_fig, title="Supply-Demand Balance (units: + surplus / − gap)", height=330,

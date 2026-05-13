@@ -16,9 +16,10 @@ CHART_COLORS = [
 
 def plan_vs_actual_chart(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df["week"], y=df["plan"], name="Plan",
+    x_col = "date" if "date" in df.columns else ("week" if "week" in df.columns else df.columns[0])
+    fig.add_trace(go.Scatter(x=df[x_col], y=df["plan"], name="Plan",
         line=dict(color=COLORS["primary"], width=2, dash="dash")))
-    fig.add_trace(go.Scatter(x=df["week"], y=df["actual"], name="Actual",
+    fig.add_trace(go.Scatter(x=df[x_col], y=df["actual"], name="Actual",
         line=dict(color=COLORS["success"], width=2),
         fill="tonexty", fillcolor=hex_to_rgba(COLORS["success"], 0.1)))
     apply_dark_layout(fig, title="Plan vs Actual — Demand Units", height=260,

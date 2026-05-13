@@ -58,9 +58,12 @@ def update_forecast_page(filter_data):
 
     # FVA waterfall
     fva_colors = [COLORS["danger"], COLORS["success"], COLORS["success"], COLORS["warning"], COLORS["primary"]]
+    # data_loader returns columns "step" and "value"
+    x_col = "stage" if "stage" in fva_df.columns else "step"
+    y_col = "wape"  if "wape"  in fva_df.columns else "value"
     fva_fig = go.Figure(go.Bar(
-        x=fva_df["stage"], y=fva_df["wape"], marker_color=fva_colors,
-        text=[f"{v:.1f}%" for v in fva_df["wape"]], textposition="outside",
+        x=fva_df[x_col], y=fva_df[y_col], marker_color=fva_colors,
+        text=[f"{v:.1f}" for v in fva_df[y_col]], textposition="outside",
         textfont=dict(color=COLORS["text_primary"])))
     apply_dark_layout(fva_fig, title="Forecast Value Added (FVA) Waterfall — WAPE %",
                       height=260, showlegend=False,
