@@ -178,7 +178,27 @@ def build_topbar():
                 color="primary",
                 className="btn-primary",
                 size="sm",
-                style={"marginRight": "16px"}
+                style={"marginRight": "12px"}
+            ),
+
+            # Export PDF Button
+            dbc.Button(
+                [html.I(className="bi bi-file-earmark-pdf"), " Export PDF"],
+                id="btn-export-pdf",
+                color="secondary",
+                outline=True,
+                size="sm",
+                style={"marginRight": "12px", "color": "var(--text-1)", "borderColor": "var(--border)"}
+            ),
+
+            # Email Report Button
+            dbc.Button(
+                [html.I(className="bi bi-envelope-paper"), " Email Alert"],
+                id="btn-email-alert",
+                color="warning",
+                outline=True,
+                size="sm",
+                style={"marginRight": "16px", "color": "var(--warning)", "borderColor": "var(--warning)"}
             ),
 
             # Theme Toggle

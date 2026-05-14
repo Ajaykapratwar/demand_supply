@@ -13,6 +13,7 @@ from components.copilot import build_copilot_panel, _CANNED_RESPONSES, _response
 from components.approval_drawer import approval_drawer_layout, register_approval_callbacks
 from components.collaboration import get_presence_indicators, sop_wizard_modal, register_collaboration_callbacks
 from components.insight_feed import insight_feed_layout
+from services.briefing_generator import trigger_executive_briefing
 import requests
 import datetime
 
@@ -101,6 +102,10 @@ app.layout = html.Div([
                 html.Div(id="page-content", children=[
                     dash.page_container,
                 ]),
+
+                # Download components
+                dcc.Download(id="download-briefing-pdf"),
+                html.Div(id="email-toast-container", style={"position": "fixed", "top": "80px", "right": "20px", "zIndex": "9999"}),
             ]),
             
             # Right Copilot Panel (slides out inside main-area or app-shell)
@@ -218,7 +223,6 @@ def toggle_copilot(toggle_n, kpi_n_clicks, is_open):
     display_style = {"display": "flex"} if new_open else {"display": "none"}
     return display_style, new_open
 
-
 @callback(
     Output("copilot-response-area", "children"),
     Input("copilot-ask-btn", "n_clicks"),
@@ -320,6 +324,148 @@ def handle_copilot_query(ask_clicks, stockout_clicks, forecast_clicks, scenario_
         
     return [_response_card(resp)]
 
+
+@callback(
+    Output("download-briefing-pdf", "data"),
+    Input("btn-export-pdf", "n_clicks"),
+    State("global-filter-store", "data"),
+    prevent_initial_call=True,
+)
+def export_dashboard_report(n_clicks, filter_data):
+    if not n_clicks:
+        return no_update
+    
+    # Prepare context data for the report
+    region = filter_data.get("region", "Global") if filter_data else "Global"
+    category = filter_data.get("category", "All") if filter_data else "All"
+    
+    from data.data_loader import get_executive_kpis, get_financial_summary, get_forecast_accuracy_kpis
+    
+    context = {
+        "timestamp": datetime.datetime.now().strftime("%Y%m%d_%H%M%S"),
+        "region": region,
+        "category": category,
+        "exec_kpis": get_executive_kpis(region, category),
+        "fin_kpis": get_financial_summary(region, category),
+        "fcst_kpis": get_forecast_accuracy_kpis(region, category),
+    }
+    
+    success, filepath = trigger_executive_briefing(context)
+    
+    if success:
+        return dcc.send_file(filepath)
+    return no_update
+
+
+@callback(
+    Output("email-toast-container", "children"),
+    Input("btn-email-alert", "n_clicks"),
+    State("global-filter-store", "data"),
+    prevent_initial_call=True,
+)
+def send_email_alert(n_clicks, filter_data):
+    if not n_clicks:
+        return no_update
+        
+    region = filter_data.get("region", "Global") if filter_data else "Global"
+    category = filter_data.get("category", "All") if filter_data else "All"
+    
+    from data.data_loader import get_executive_kpis, get_financial_summary, get_forecast_accuracy_kpis, get_action_queue
+    from services.email_service import send_alert_email
+    
+    # Check for critical alerts to include in email body
+    queue = get_action_queue(region, category)
+    critical_alerts = [item for item in queue if item.get("priority") == "CRITICAL"]
+    
+    body = f"PlanIQ Dashboard Alert for {region} - {category}\n\n"
+    if critical_alerts:
+        body += "CRITICAL ALERTS DETECTED:\n"
+        for alert in critical_alerts:
+            body += f"- {alert['sku']}: {alert['issue']} -> {alert['action']}\n"
+    else:
+        body += "No critical alerts at this time.\n"
+        
+    body += "\nPlease find the fully detailed KPI report attached.\n\nPlanIQ Automated System"
+    
+    context = {
+        "timestamp": datetime.datetime.now().strftime("%Y%m%d_%H%M%S"),
+        "region": region,
+        "category": category,
+        "exec_kpis": get_executive_kpis(region, category),
+        "fin_kpis": get_financial_summary(region, category),
+        "fcst_kpis": get_forecast_accuracy_kpis(region, category),
+    }
+    
+    success, filepath = trigger_executive_briefing(context)
+    
+    if success:
+        email_sent, msg = send_alert_email("hufeh9299@gmail.com", f"PlanIQ Alert - {region}", body, filepath)
+        
+        icon = "bi-check-circle text-success" if email_sent else "bi-exclamation-circle text-danger"
+        header = "Email Sent" if email_sent else "Email Failed"
+        
+        return dbc.Toast(
+            [html.P(msg, className="mb-0")],
+            id="email-toast",
+            header=html.Div([html.I(className=f"bi {icon} me-2"), header]),
+            is_open=True,
+            dismissable=True,
+            duration=4000,
+            icon="primary" if email_sent else "danger",
+            style={"position": "fixed", "top": "66px", "right": "10px", "width": 350, "zIndex": 9999}
+        )
+    
+    return dbc.Toast(
+        [html.P("Failed to generate report for email.", className="mb-0")],
+        id="email-toast",
+        header=html.Div([html.I(className="bi bi-exclamation-circle text-danger me-2"), "Error"]),
+        is_open=True,
+        dismissable=True,
+        duration=4000,
+        icon="danger",
+        style={"position": "fixed", "top": "66px", "right": "10px", "width": 350, "zIndex": 9999}
+    )
+
+
+import threading
+import time
+
+def automated_alert_job():
+    # Wait 15 seconds after app starts to simulate a background system check
+    time.sleep(15)
+    from data.data_loader import get_executive_kpis, get_financial_summary, get_forecast_accuracy_kpis, get_action_queue
+    from services.email_service import send_alert_email
+    
+    region = "Global"
+    category = "All"
+    queue = get_action_queue(region, category)
+    critical_alerts = [item for item in queue if item.get("priority") == "CRITICAL"]
+    
+    if critical_alerts:
+        print("[Automated System] Critical conditions detected. Generating automated email alert...")
+        body = f"AUTOMATED SYSTEM ALERT - {region}\n\nCRITICAL CONDITIONS DETECTED:\n"
+        for alert in critical_alerts:
+            body += f"- {alert['sku']}: {alert['issue']} -> {alert['action']}\n"
+        
+        body += "\nDetailed KPI report is attached. Please review immediately.\n\nPlanIQ Background Monitor"
+        
+        context = {
+            "timestamp": datetime.datetime.now().strftime("%Y%m%d_%H%M%S"),
+            "region": region,
+            "category": category,
+            "exec_kpis": get_executive_kpis(region, category),
+            "fin_kpis": get_financial_summary(region, category),
+            "fcst_kpis": get_forecast_accuracy_kpis(region, category),
+        }
+        
+        success, filepath = trigger_executive_briefing(context)
+        if success:
+            email_sent, _ = send_alert_email("hufeh9299@gmail.com", "URGENT: PlanIQ Automated Critical Alert", body, filepath)
+            if email_sent:
+                print("[Automated System] Automated alert email sent successfully.")
+
+# Start the automated background monitor
+threading.Thread(target=automated_alert_job, daemon=True).start()
 
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

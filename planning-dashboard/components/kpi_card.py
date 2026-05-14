@@ -50,8 +50,8 @@ def kpi_card(title: str, value: str, target: str, delta: str,
         # ── Top bar: title + badges ───────────────────────────
         html.Div([
             html.Span(title.upper(), style={
-                "fontSize": "0.67rem", "fontWeight": "700",
-                "letterSpacing": "0.09em", "color": COLORS["text_secondary"],
+                "fontSize": "0.75rem", "fontWeight": "800",
+                "letterSpacing": "0.09em", "color": COLORS["text_primary"],
                 "flex": "1",
             }),
             html.Div([
