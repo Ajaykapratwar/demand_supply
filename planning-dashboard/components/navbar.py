@@ -2,6 +2,7 @@
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 from config import COLORS, NAV_ITEMS, HORIZONS, REGIONS, CATEGORIES
+from components.insight_feed import insight_feed_layout
 
 
 _DROPDOWN_STYLE = {
@@ -125,11 +126,34 @@ def build_sidebar():
             )
             for item in NAV_ITEMS
         ]),
+        
+        # Human-AI Collaboration Modes
+        html.Div("AI MODE", style={**_LABEL_STYLE, "padding": "24px 16px 8px", "marginTop": "auto"}),
+        html.Div([
+            dcc.RadioItems(
+                options=[
+                    {'label': ' Analyst (Push)', 'value': 'analyst'},
+                    {'label': ' Decision Maker (Pull)', 'value': 'decision_maker'},
+                    {'label': ' Coach (Feedback)', 'value': 'coach'}
+                ],
+                value='decision_maker',
+                id='ai-collaboration-mode',
+                labelStyle={'display': 'block', 'color': COLORS['text_secondary'], 'marginBottom': '8px', 'fontSize': '0.85rem'},
+                inputStyle={"marginRight": "8px"}
+            )
+        ], style={"padding": "0 16px"}),
+        
+        # Automated Insight Feed
+        html.Div("LIVE INSIGHTS", style={**_LABEL_STYLE, "padding": "24px 16px 8px"}),
+        html.Div(insight_feed_layout(), style={"padding": "0 8px", "overflowY": "auto", "flex": "1"})
+        
     ], style={
         "backgroundColor": COLORS["surface"],
         "borderRight": f"1px solid {COLORS['border']}",
         "minHeight": "100vh",
-        "width": "220px",
+        "width": "280px", # Increased width for feed
         "flexShrink": "0",
         "paddingTop": "8px",
+        "display": "flex",
+        "flexDirection": "column"
     })

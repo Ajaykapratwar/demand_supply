@@ -72,6 +72,73 @@ TYPOGRAPHY = {
     "header_spacing": "0.08em",
 }
 
+# ── Blueprint v2.0 §13 — Per-dashboard alert thresholds (configurable) ──────
+ALERT_THRESHOLDS = {
+    "executive": {
+        "service_level_red":   92.0,   # % below → red
+        "risk_score_red":       0.70,   # > → red
+        "cost_delta_yellow":    5.0,    # % vs plan → yellow
+        "cost_delta_red":      10.0,    # % vs plan → red
+    },
+    "forecast": {
+        "wape_red":            25.0,    # % on A-class → red
+        "coverage_low":        75.0,    # % below → calibration warning
+        "coverage_high":       85.0,    # % above → calibration warning
+    },
+    "capacity": {
+        "utilization_burn":    95.0,    # % sustained → burnout risk
+        "oee_red":             65.0,    # % below → review
+        "fpy_red":             95.0,    # % below → quality investigation
+    },
+    "financial": {
+        "margin_delta_red":    -2.0,    # pp vs plan → red
+        "cash_to_cash_warn":   10.0,    # days over target → warning
+    },
+    "risk": {
+        "composite_p1":         0.75,   # > → P1 incident
+    },
+    "sustainability": {
+        "sbti_off_red":         5.0,    # % off trajectory → red
+    },
+    "inventory": {
+        "dos_over":             2.0,    # × target → overstock flag
+        "dos_under":            0.5,    # × target → stockout risk flag
+    },
+    "regional": {
+        "fill_rate_red":       92.0,    # % below → red overlay
+    },
+}
+
+# ── Blueprint v2.0 §18.2 — Industry KPI Benchmarks (CPG/Retail defaults) ─────
+INDUSTRY_BENCHMARKS = {
+    "forecast_wape":        {"p25": 15.0, "p50": 20.0, "p75": 25.0},
+    "otif":                {"p25": 95.0, "p50": 96.5, "p75": 98.0},
+    "inventory_turns":     {"p25":  8.0, "p50": 10.0, "p75": 12.0},
+    "dos_finished_goods":  {"p25": 30.0, "p50": 37.5, "p75": 45.0},
+    "fill_rate":           {"p25": 95.0, "p50": 96.5, "p75": 98.0},
+    "cash_to_cash":        {"p25": 30.0, "p50": 45.0, "p75": 60.0},
+    "logistics_pct_sales": {"p25":  4.0, "p50":  6.5, "p75":  9.0},
+    "oee":                 {"p25": 60.0, "p50": 67.5, "p75": 75.0},
+}
+
+# ── Blueprint v2.0 §13 — AI recommendation phrasing templates ─────────────────
+AI_RECOMMENDATION_TEMPLATES = {
+    "safety_stock_increase":
+        "Increase safety stock by {pct}% in {region} to reduce stockout risk from {p_old}% to {p_new}%.",
+    "production_shift":
+        "Shift production from {plant_a} to {plant_b} to improve OTIF by {delta_pp} pp with {cost_delta}% cost change.",
+    "sku_defer":
+        "Defer {sku_count} low-margin SKUs in {region} to free {capacity_hrs} capacity hours for high-margin lines.",
+    "inventory_rebalance":
+        "Rebalance {qty} units from {dc_a} (overstock) to {dc_b} (understock); saves {usd} carrying cost; raises fill rate by {pp} pp.",
+    "freight_mode_switch":
+        "Switching {sku_count} SKUs from air to ocean saves {usd}/quarter; service impact +{days} lead time.",
+    "supplier_alternate":
+        "Supplier {x} reliability dropped {pp} pp; recommend qualifying alternate supplier {y} (lead time +{days}, cost +{pct}%).",
+    "carbon_mode_switch":
+        "Switch {lanes} from air to rail; reduces Scope 3 by {tco2} tCO₂e; service impact: +{days} extra lead time.",
+}
+
 # Planning horizons
 HORIZONS = ["Operational (0-4w)", "Tactical (1-12m)", "Strategic (12-36m+)"]
 

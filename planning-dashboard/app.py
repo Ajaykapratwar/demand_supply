@@ -10,6 +10,9 @@ from dash import dcc, html, Input, Output, State, callback, ctx, no_update
 from config import COLORS, USERS
 from components.navbar import build_navbar, build_sidebar
 from components.copilot import build_copilot_panel, _CANNED_RESPONSES, _response_card
+from components.approval_drawer import approval_drawer_layout, register_approval_callbacks
+from components.collaboration import get_presence_indicators, sop_wizard_modal, register_collaboration_callbacks
+from components.insight_feed import insight_feed_layout
 
 # ── App Init ──────────────────────────────────────────────────────────────────
 app = dash.Dash(
@@ -55,6 +58,10 @@ app.layout = html.Div([
     html.Div([
         # Left Sidebar
         build_sidebar(),
+        
+        # UI overlays (Modals, Drawers)
+        sop_wizard_modal(),
+        approval_drawer_layout(),
 
         # Main content
         html.Div(
@@ -92,11 +99,18 @@ app.layout = html.Div([
                 "display": "flex", "alignItems": "center", "justifyContent": "center",
             },
         ),
+        
+        # Presence Indicators (floating top right below nav)
+        html.Div(get_presence_indicators(), style={"position": "fixed", "top": "70px", "right": "20px", "zIndex": "998"})
     ])
 ], style={"backgroundColor": COLORS["background"], "fontFamily": "Inter, sans-serif"})
 
 
 # ── Callbacks ─────────────────────────────────────────────────────────────────
+
+# Register new component callbacks
+register_approval_callbacks(app)
+register_collaboration_callbacks(app)
 
 @callback(
     Output("auth-store",       "data"),

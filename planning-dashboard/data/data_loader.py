@@ -563,3 +563,202 @@ def get_safety_stock_sim(service_level, region="Global", category="All"):
         "working_capital_usd": working_capital,
         "stockout_prob": stockout_prob
     }
+
+# ── Blueprint v2.0 §11.1 — Production / Capacity KPIs ────────────────────────
+def get_production_kpis(region="Global", category="All"):
+    """OEE, FPY, Schedule Adherence, Throughput, Changeover — §11.1."""
+    w = _filter(_warehouse(), region, category)
+    if w.empty:
+        util = 75.0
+    else:
+        util = round(w["Utilization_%"].mean(), 1)
+
+    # Derive production KPIs from utilization as proxy (no raw production CSV)
+    availability = min(util / 100 * 1.05, 0.98)
+    performance  = min(util / 100 * 0.97, 0.97)
+    quality      = 0.987
+    oee          = round(availability * performance * quality * 100, 1)
+    fpy          = round(quality * 100, 1)
+    schedule_adh = round(min(util * 1.02, 97.5), 1)
+    throughput   = round(util * 14.2, 0)   # units/hr proxy
+
+    return {
+        "oee":              {"value": oee,          "target": 85.0, "delta": round(oee - 85.0, 1),          "unit": "%",      "status": "danger" if oee < 65 else ("warning" if oee < 85 else "success"), "spark": [oee] * 14, "ai_generated": True},
+        "fpy":              {"value": fpy,          "target": 98.0, "delta": round(fpy - 98.0, 1),          "unit": "%",      "status": "danger" if fpy < 95 else "success", "spark": [fpy] * 14, "ai_generated": True},
+        "schedule_adh":     {"value": schedule_adh, "target": 95.0, "delta": round(schedule_adh - 95.0, 1), "unit": "%",      "status": "warning" if schedule_adh < 95 else "success", "spark": [schedule_adh] * 14},
+        "throughput":       {"value": throughput,   "target": 1200.0, "delta": round(throughput - 1200, 0), "unit": "u/hr",   "status": "success", "spark": [throughput] * 14},
+        "utilization":      {"value": util,         "target": 85.0, "delta": round(util - 85.0, 1),         "unit": "%",      "status": "danger" if util > 95 else ("warning" if util > 85 else "success"), "spark": [util] * 14},
+    }
+
+# ── Blueprint v2.0 §11.3 — Extended Financial KPIs ───────────────────────────
+def get_financial_extended_kpis(region="Global", category="All"):
+    """EVA, ROIC, NOPAT, Logistics % Sales, Cost-per-Order, Cash-to-Cash — §11.3."""
+    s = _filter(_sales(), region, category)
+    l = _filter(_logistics(), region, category)
+    o = _filter(_orders(), region, category)
+
+    rev          = s["Net_Revenue_INR"].sum() / 1e7 if not s.empty else 100.0
+    log_cost_m   = l["Cost_Per_Unit_INR"].sum() / 1e6 if not l.empty else 6.5
+    total_orders = int(o["Units_Ordered"].count()) if not o.empty else 1000
+
+    # Derived approximations matching §11.3 schema columns
+    logistics_pct = round(log_cost_m / max(rev, 1) * 100, 2)
+    cost_per_order = round(log_cost_m * 1e6 / max(total_orders, 1), 0)
+    nopat        = round(rev * 0.12, 2)             # 12% operating margin × (1-tax)
+    invested_cap = round(rev * 0.6, 2)
+    wacc         = 0.09
+    eva          = round(nopat - invested_cap * wacc, 2)
+    roic         = round(nopat / max(invested_cap, 1) * 100, 1)
+    cash_to_cash = 45.0                             # days (fixed proxy)
+    carrying_cost = round(rev * 0.02, 2)
+
+    return {
+        "eva":              {"value": eva,           "target": 0.0,  "delta": eva,                         "unit": "CrINR", "status": "success" if eva > 0 else "danger",   "spark": [eva] * 14, "ai_generated": True},
+        "roic":             {"value": roic,          "target": 15.0, "delta": round(roic - 15.0, 1),      "unit": "%",     "status": "success" if roic >= 15 else "warning", "spark": [roic] * 14, "ai_generated": True},
+        "logistics_pct":    {"value": logistics_pct, "target": 6.5,  "delta": round(logistics_pct - 6.5, 2), "unit": "%", "status": "danger" if logistics_pct > 9 else ("warning" if logistics_pct > 6.5 else "success"), "spark": [logistics_pct] * 14},
+        "cost_per_order":   {"value": cost_per_order,"target": 500,  "delta": round(cost_per_order - 500, 0), "unit": "₹", "status": "warning", "spark": [cost_per_order] * 14},
+        "cash_to_cash":     {"value": cash_to_cash,  "target": 45.0, "delta": round(cash_to_cash - 45.0, 1), "unit": "d", "status": "warning" if cash_to_cash > 55 else "success", "spark": [cash_to_cash] * 14},
+        "carrying_cost":    {"value": carrying_cost, "target": round(rev * 0.015, 2), "delta": round(carrying_cost - rev * 0.015, 2), "unit": "CrINR", "status": "warning", "spark": [carrying_cost] * 14},
+    }
+
+# ── Blueprint v2.0 §11.5 — Extended Service KPIs ─────────────────────────────
+def get_service_kpis(region="Global", category="All"):
+    """OTIF, Customer Fill Rate, Returns Rate, Perfect Order Rate — §11.5."""
+    o = _filter(_orders(), region, category)
+
+    if o.empty:
+        otif = 94.0; fill = 96.0; returns = 1.8; por = 90.0
+    else:
+        otif    = round(o["Fulfillment_Rate_%"].mean() * 100, 1)
+        fill    = round(o["Units_Fulfilled"].sum() / max(o["Units_Ordered"].sum(), 1) * 100, 1)
+        returns = round(o["Units_Backordered"].sum() / max(o["Units_Ordered"].sum(), 1) * 100, 2)
+        por     = round(otif * 0.96, 1)       # perfect order = OTIF × quality × docs × damage-free
+
+    return {
+        "otif":         {"value": otif,    "target": 95.0, "delta": round(otif - 95.0, 1),    "unit": "%", "status": "success" if otif >= 95 else "warning", "spark": [otif] * 14},
+        "fill_rate":    {"value": fill,    "target": 98.0, "delta": round(fill - 98.0, 1),    "unit": "%", "status": "success" if fill >= 98 else "warning",  "spark": [fill] * 14},
+        "returns_rate": {"value": returns, "target": 2.0,  "delta": round(returns - 2.0, 2),  "unit": "%", "status": "danger"  if returns > 2 else "success",  "spark": [returns] * 14},
+        "perfect_order":{"value": por,     "target": 90.0, "delta": round(por - 90.0, 1),     "unit": "%", "status": "success" if por >= 90 else "warning",    "spark": [por] * 14},
+    }
+
+# ── Blueprint v2.0 §16.3 — Forecast Quantiles for Fan Chart ──────────────────
+def get_forecast_quantiles(region="Global", category="All", periods=13):
+    """Return dict with p10/p25/p50/p75/p90 lists and date labels — §16.3."""
+    o = _filter(_orders(), region, category)
+    weekly = o.groupby(pd.Grouper(key="Date", freq="W"))["Units_Ordered"].sum().dropna()
+    last   = weekly.iloc[-1] if len(weekly) > 0 else 10000
+    trend  = np.linspace(last, last * 1.08, periods)
+
+    rng    = np.random.default_rng(42)
+    dates  = [str(d.date()) for d in pd.date_range(
+        weekly.index[-1] + pd.Timedelta(weeks=1), periods=periods, freq="W"
+    )] if len(weekly) > 0 else [f"W+{i}" for i in range(1, periods + 1)]
+
+    noise  = rng.normal(0, last * 0.04, periods)
+    return {
+        "dates": dates,
+        "p10":   (trend * 0.82 + noise * 0.5).round(0).tolist(),
+        "p25":   (trend * 0.91 + noise * 0.3).round(0).tolist(),
+        "p50":   trend.round(0).tolist(),
+        "p75":   (trend * 1.09 + noise * 0.3).round(0).tolist(),
+        "p90":   (trend * 1.18 + noise * 0.5).round(0).tolist(),
+        "actuals": weekly.iloc[-4:].round(0).tolist(),   # last 4 weeks for overlap
+    }
+
+# ── Blueprint v2.0 §12 — KPI Interdependency (PCTM) ─────────────────────────
+_KPI_INTERDEPENDENCY = {
+    "otif": [
+        {"kpi": "Inventory Turns",   "type": "trade_off",   "strength": -0.42, "note": "Pushing turns reduces buffer → OTIF at risk"},
+        {"kpi": "Fill Rate",         "type": "reinforcing", "strength":  0.81, "note": "OTIF and Fill Rate move together"},
+        {"kpi": "Logistics Cost",    "type": "trade_off",   "strength": -0.35, "note": "Higher OTIF often requires expediting"},
+    ],
+    "inventory_turns": [
+        {"kpi": "Working Capital",   "type": "reinforcing", "strength":  0.72, "note": "Higher turns free working capital"},
+        {"kpi": "Fill Rate",         "type": "trade_off",   "strength": -0.62, "note": "Pushing turns historically hurts fill rate"},
+        {"kpi": "Expediting Cost",   "type": "trade_off",   "strength":  0.41, "note": "Lower stock → more expediting"},
+    ],
+    "forecast_accuracy": [
+        {"kpi": "Safety Stock",      "type": "trade_off",   "strength": -0.55, "note": "Better accuracy allows leaner safety stock"},
+        {"kpi": "Service Level",     "type": "reinforcing", "strength":  0.68, "note": "Accurate forecasts improve service"},
+        {"kpi": "Inventory Cost",    "type": "reinforcing", "strength":  0.49, "note": "Accuracy reduces both over- and under-stock"},
+    ],
+    "oee": [
+        {"kpi": "Throughput",        "type": "reinforcing", "strength":  0.88, "note": "OEE directly drives output volume"},
+        {"kpi": "Maintenance Cost",  "type": "trade_off",   "strength": -0.31, "note": "High OEE targets may defer maintenance"},
+        {"kpi": "Schedule Adherence","type": "reinforcing", "strength":  0.74, "note": "Reliable equipment enables schedule adherence"},
+    ],
+    "carbon": [
+        {"kpi": "Logistics Cost",    "type": "trade_off",   "strength": -0.45, "note": "Green modes (rail/ocean) usually cheaper"},
+        {"kpi": "Lead Time",         "type": "trade_off",   "strength":  0.38, "note": "Slower modes reduce carbon but extend LT"},
+        {"kpi": "Service Level",     "type": "trade_off",   "strength": -0.29, "note": "Greener routing may reduce agility"},
+    ],
+}
+
+def get_kpi_interdependencies(kpi_name: str) -> list:
+    """Return interdependency list for a KPI — §12. Returns empty list for unknown KPIs."""
+    key = kpi_name.lower().replace(" ", "_")
+    return _KPI_INTERDEPENDENCY.get(key, [])
+
+# ── Blueprint v2.0 §10.6 — Missing Schema Additions ──────────────────────────
+def get_workforce_snapshot(region="Global"):
+    """Simulates fact_workforce data: shift patterns, absenteeism, skill-mix."""
+    # Synthetic data based on region
+    base_absenteeism = 4.2 if region == "Global" else np.random.uniform(2.5, 6.0)
+    skill_mix = 88.0 if region == "Global" else np.random.uniform(80.0, 95.0)
+    return {
+        "absenteeism_pct": {"value": round(base_absenteeism, 1), "target": 3.0, "status": "warning" if base_absenteeism > 4.0 else "success"},
+        "skill_mix_readiness": {"value": round(skill_mix, 1), "target": 90.0, "status": "danger" if skill_mix < 85 else "success"},
+        "open_shifts": {"value": int(np.random.uniform(5, 25)), "target": 0, "status": "warning"},
+    }
+
+def get_external_event_log(region="Global"):
+    """Simulates fact_external_event data: weather, geopolitical, strike events."""
+    # Synthetic live threat feed
+    events = [
+        {"timestamp": pd.Timestamp.now() - pd.Timedelta(hours=2), "type": "Weather", "severity": "High", "description": "Typhoon warning near major Asian port."},
+        {"timestamp": pd.Timestamp.now() - pd.Timedelta(hours=14), "type": "Geopolitical", "severity": "Medium", "description": "New tariff discussions impacting components."},
+        {"timestamp": pd.Timestamp.now() - pd.Timedelta(days=1), "type": "Labor", "severity": "Critical", "description": "Looming strike at secondary logistics hub."},
+    ]
+    return pd.DataFrame(events)
+
+def get_pricing_change_fact(region="Global", category="All"):
+    """Simulates fact_pricing_change data: promo impacts and elasticity."""
+    return pd.DataFrame([
+        {"date": pd.Timestamp.today().date(), "sku_family": category, "price_change_pct": -5.0, "volume_impact_pct": 12.5, "margin_impact_pct": -1.2},
+        {"date": (pd.Timestamp.today() - pd.Timedelta(days=30)).date(), "sku_family": category, "price_change_pct": 2.0, "volume_impact_pct": -4.0, "margin_impact_pct": 1.5},
+    ])
+
+def get_industry_benchmarks():
+    """Fetches dim_industry_benchmark data (from config for now)."""
+    from config import INDUSTRY_BENCHMARKS
+    return INDUSTRY_BENCHMARKS
+
+def get_supplier_network(region="Global"):
+    """Simulates Supplier Network Graph data"""
+    from config import COLORS
+    nodes = [
+        {"label": "Tier 1: Alpha", "color": COLORS["success"], "size": 30},
+        {"label": "Tier 1: Beta", "color": COLORS["warning"], "size": 35},
+        {"label": "Tier 2: Gamma", "color": COLORS["danger"], "size": 25},
+        {"label": "Tier 2: Delta", "color": COLORS["success"], "size": 20},
+        {"label": "Tier 3: Epsilon", "color": COLORS["primary"], "size": 15},
+    ]
+    edges = [
+        {"source": 1, "target": 0},
+        {"source": 2, "target": 1},
+        {"source": 3, "target": 1},
+        {"source": 4, "target": 2},
+        {"source": 4, "target": 3},
+    ]
+    return nodes, edges
+
+def get_pareto_scenarios(region="Global"):
+    """Simulates Pareto Frontier Scenarios"""
+    return [
+        {"name": "Current Plan", "cost": 120, "service": 88, "carbon": 40, "is_frontier": False},
+        {"name": "Cost Minimized", "cost": 90, "service": 80, "carbon": 55, "is_frontier": True},
+        {"name": "Balanced", "cost": 110, "service": 90, "carbon": 45, "is_frontier": True},
+        {"name": "Green Optimal", "cost": 130, "service": 92, "carbon": 20, "is_frontier": True},
+        {"name": "Service Maximized", "cost": 150, "service": 98, "carbon": 60, "is_frontier": True},
+        {"name": "Suboptimal A", "cost": 140, "service": 85, "carbon": 50, "is_frontier": False},
+    ]

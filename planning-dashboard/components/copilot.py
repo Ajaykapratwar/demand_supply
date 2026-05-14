@@ -47,6 +47,60 @@ def _response_card(resp: dict) -> dbc.Card:
     )
 
 
+def narrative_card(text: str, dashboard_id: str = "") -> html.Div:
+    """§14.1 Component 1 — AI narrative insight card shown at top of each dashboard."""
+    return html.Div([
+        html.Div([
+            html.Span("✨", style={"fontSize": "0.9rem", "marginRight": "6px",
+                                    "color": COLORS["accent"]}),
+            html.Span("AI NARRATIVE", style={
+                "fontSize": "0.65rem", "fontWeight": "700",
+                "color": COLORS["accent"], "letterSpacing": "0.08em",
+            }),
+        ], style={"marginBottom": "6px"}),
+        dcc.Markdown(text, style={"color": COLORS["text_primary"], "fontSize": "0.84rem",
+                                   "margin": "0"}),
+    ], style={
+        "backgroundColor": f"{COLORS['accent']}12",
+        "border": f"1px solid {COLORS['accent']}44",
+        "borderLeft": f"3px solid {COLORS['accent']}",
+        "borderRadius": "8px",
+        "padding": "12px 16px",
+        "marginBottom": "16px",
+    })
+
+
+def ai_recommendation_card(action: str, impact: str, confidence: float = 0.0) -> html.Div:
+    """§14.1 Component 10 — Prescriptive action card with expected impact and confidence."""
+    conf_color = COLORS["success"] if confidence >= 0.75 else (
+        COLORS["warning"] if confidence >= 0.5 else COLORS["danger"]
+    )
+    return html.Div([
+        html.Div([
+            html.Span("⚡ Recommended Action", style={
+                "fontSize": "0.65rem", "fontWeight": "700",
+                "color": COLORS["primary"], "letterSpacing": "0.06em",
+            }),
+            html.Span(f"{confidence:.0%} confidence", style={
+                "fontSize": "0.62rem", "color": conf_color,
+                "border": f"1px solid {conf_color}", "borderRadius": "3px",
+                "padding": "0 5px", "marginLeft": "8px",
+            }),
+        ], style={"marginBottom": "6px"}),
+        html.Div(action, style={"color": COLORS["text_primary"],
+                                "fontSize": "0.84rem", "marginBottom": "4px"}),
+        html.Div(f"Expected impact: {impact}",
+                 style={"color": COLORS["text_secondary"], "fontSize": "0.78rem"}),
+    ], style={
+        "backgroundColor": f"{COLORS['primary']}10",
+        "border": f"1px solid {COLORS['border']}",
+        "borderLeft": f"3px solid {COLORS['primary']}",
+        "borderRadius": "8px",
+        "padding": "10px 14px",
+        "marginBottom": "8px",
+    })
+
+
 def build_copilot_panel():
     return html.Div([
         # Header

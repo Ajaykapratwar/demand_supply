@@ -5,7 +5,11 @@ from dash import dcc, html, register_page, callback, Input, Output
 import pandas as pd
 
 from config import COLORS, LEGEND_STYLE, apply_dark_layout
-from data.data_loader import get_capacity_utilization, get_capacity_load_profile, get_capacity_gantt
+from components.kpi_card import kpi_row
+from components.copilot import narrative_card
+from components.scenario_controls import ScenarioSlider
+from components.charts import density_plot
+from data.data_loader import get_capacity_utilization, get_capacity_load_profile, get_capacity_gantt, get_production_kpis
 
 register_page(__name__, path="/capacity", name="Capacity Planning")
 
@@ -52,6 +56,7 @@ def update_capacity_page(filter_data):
     cap = get_capacity_utilization(region, category)
     load = get_capacity_load_profile(region, category)
     gantt = get_capacity_gantt(region, category)
+    prod_kpis = get_production_kpis(region, category)  # §11.1
 
     gauges = [dbc.Col(_util_gauge(cap.iloc[i]), xs=6, sm=3, className="mb-2") for i in range(len(cap))]
 
@@ -71,7 +76,6 @@ def update_capacity_page(filter_data):
     _gantt_fig = go.Figure()
     _PLANT_COLOR = {p: plant_colors[i % len(plant_colors)] for i, p in enumerate(plants)}
     for _, row in gantt.iterrows():
-        # For plotly date xaxis, base is datetime, x is duration in milliseconds
         duration_ms = (pd.to_datetime(row["finish"]) - pd.to_datetime(row["start"])).total_seconds() * 1000
         _gantt_fig.add_trace(go.Bar(
             x=[duration_ms], y=[row["plant"]], orientation="h",
@@ -80,16 +84,51 @@ def update_capacity_page(filter_data):
             text=row["task"], textposition="inside", insidetextanchor="middle",
             hovertemplate=f"<b>{row['task']}</b><br>{row['start'].strftime('%Y-%m-%d')} → {row['finish'].strftime('%Y-%m-%d')}<extra></extra>",
         ))
-    
-    # Compute gantt x-axis range
+
     min_date = gantt["start"].min() - pd.Timedelta(days=1)
     max_date = gantt["finish"].max() + pd.Timedelta(days=1)
-
-    apply_dark_layout(_gantt_fig, title=f"Production Schedule — Gantt View", height=240,
+    apply_dark_layout(_gantt_fig, title="Production Schedule — Gantt View", height=240,
                       barmode="stack", showlegend=False,
                       xaxis=dict(type="date", gridcolor=COLORS["border"], range=[min_date, max_date]))
 
+    # §11.1 — Production KPI labels
+    prod_labels = {"oee": "OEE", "fpy": "First Pass Yield", "schedule_adh": "Schedule Adh.",
+                   "throughput": "Throughput", "utilization": "Avg Utilization"}
+    prod_formatted = {prod_labels.get(k, k): v for k, v in prod_kpis.items()}
+
+    # §13 — Narrative for capacity
+    oee_val = prod_kpis["oee"]["value"]
+    util_val = prod_kpis["utilization"]["value"]
+    narrative = (
+        f"**OEE at {oee_val:.1f}%** vs 85% target "
+        f"({'✕ below' if oee_val < 65 else '⚠ near-threshold' if oee_val < 85 else '✓ on-track'}). "
+        f"**Avg utilization {util_val:.1f}%** "
+        f"({'🔴 over-loaded' if util_val > 95 else '⚠ above comfort zone' if util_val > 85 else '✓ healthy'}). "
+        f"Review gantt for WH-East bottleneck."
+    )
+
     return html.Div([
+        # §14.1 narrative
+        narrative_card(narrative, dashboard_id="capacity"),
+
+        # §11.1 Production KPI row
+        html.Div("PRODUCTION KPIs", style={"fontSize": "0.72rem", "fontWeight": "700",
+                 "letterSpacing": "0.08em", "color": COLORS["text_secondary"], "marginBottom": "8px"}),
+        kpi_row(prod_formatted, cols=5),
+
+        # §13 Demand-surge scenario slider
+        html.Div("SCENARIO: DEMAND SURGE", style={"fontSize": "0.72rem", "fontWeight": "700",
+                 "letterSpacing": "0.08em", "color": COLORS["text_secondary"],
+                 "marginBottom": "6px", "marginTop": "12px"}),
+        dbc.Row([dbc.Col(
+            ScenarioSlider(
+                slider_id="capacity-demand-surge",
+                label="Demand Surge (%)",
+                min_val=0, max_val=50, default=10, step=5,
+                marks={0: "0%", 10: "+10%", 25: "+25%", 50: "+50%"},
+            ), md=6,
+        )], className="mb-3"),
+
         html.Div("PLANT UTILIZATION", style={"fontSize": "0.72rem", "fontWeight": "700",
                  "letterSpacing": "0.08em", "color": COLORS["text_secondary"], "marginBottom": "8px"}),
         dbc.Row(gauges, className="mb-3"),
@@ -97,4 +136,6 @@ def update_capacity_page(filter_data):
             dbc.Col(dcc.Graph(figure=_load_fig,  config={"displayModeBar": False}), md=7, className="mb-3"),
             dbc.Col(dcc.Graph(figure=_gantt_fig, config={"displayModeBar": False}), md=5, className="mb-3"),
         ]),
+        dbc.Row([dbc.Col(dcc.Graph(figure=density_plot({"Utilization": cap["utilization"].tolist()}, title="Plant Utilization Density Distribution"), config={"displayModeBar": False}), className="mb-3")]),
     ])
+

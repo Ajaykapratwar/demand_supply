@@ -6,7 +6,8 @@ import pandas as pd
 
 from components.kpi_card import kpi_row
 from components import charts
-from config import COLORS, apply_dark_layout
+from components.copilot import narrative_card, ai_recommendation_card
+from config import COLORS, apply_dark_layout, ALERT_THRESHOLDS
 from data.data_loader import get_executive_kpis, get_plan_vs_actual, get_action_queue, get_scenario_comparison
 
 register_page(__name__, path="/", name="Executive Summary")
@@ -60,21 +61,27 @@ def update_executive_page(filter_data):
         ], style={"padding": "10px 14px"}),
         style={"backgroundColor": COLORS["surface"], "border": f"1px solid {color}44", "borderRadius": "8px"})
 
+    # §17.6 apply alert-threshold-aware status to OTIF and risk-driven KPIs
+    thr = ALERT_THRESHOLDS["executive"]
+    svc_status = "danger" if kpis["fill_rate"]["value"] < thr["service_level_red"] else "success"
+    kpis["fill_rate"]["status"] = svc_status
+
+    # §14.1 Narrative card — AI-generated executive brief
+    narrative_text = (
+        f"**Fill Rate** at **{kpis['fill_rate']['value']:.1f}%** vs 98% target "
+        f"({'✕ below' if kpis['fill_rate']['value'] < thr['service_level_red'] else '✓ on-track'} threshold). "
+        f"**Stockout rate** {kpis['stockout_rate']['value']:.2f}% — review action queue below. "
+        f"**Forecast R²** = {kpis['r2']['value']:.3f} (target ≥0.91). "
+        f"Carbon at {kpis['co2']['value']:.0f} tCO₂."
+    )
+
     return html.Div([
         html.H5("Executive Summary", style={"color": COLORS["text_primary"], "fontWeight": "700", "marginBottom": "4px"}),
         html.Div(f"Real-time cross-functional KPI overview — {horizon} Horizon",
-                 style={"color": COLORS["text_secondary"], "fontSize": "0.83rem", "marginBottom": "20px"}),
-        
-        # AI Brief
-        html.Div(style={"marginBottom": "16px", "backgroundColor": COLORS["card"], "padding": "15px", "borderRadius": "8px", "border": f"1px solid {COLORS['border']}"}, children=[
-            html.Div("[AI GENERATED]", style={"fontSize": "0.7rem", "color": COLORS["primary"], "fontWeight": "700", "marginBottom": "6px", "letterSpacing": "0.05em"}),
-            html.P(
-                f"Fill rate at {kpis['fill_rate']['value']:.1f}% vs 98% target. "
-                f"Model R²={kpis['r2']['value']:.3f} on test set (target ≥0.91). "
-                f"Stockout rate {kpis['stockout_rate']['value']:.2f}% — review action queue below.",
-                style={"fontSize": "0.85rem", "color": COLORS["text_primary"], "margin": "0", "lineHeight": "1.5"}
-            ),
-        ]),
+                 style={"color": COLORS["text_secondary"], "fontSize": "0.83rem", "marginBottom": "16px"}),
+
+        # §14.1 AI Narrative card
+        narrative_card(narrative_text, dashboard_id="executive"),
 
         kpi_row(formatted_kpis, cols=4),
         dbc.Row([
@@ -84,5 +91,21 @@ def update_executive_page(filter_data):
         html.Div("ACTION QUEUE — LIVE ANOMALIES", style={"fontSize": "0.72rem", "fontWeight": "700",
                  "letterSpacing": "0.08em", "color": COLORS["text_secondary"], "marginBottom": "10px"}),
         dbc.Row([dbc.Col(_risk_badge(r), md=4, className="mb-2") for r in queue]),
+
+        # §14.1 AI Recommendation cards
+        html.Div("AI RECOMMENDATIONS", style={"fontSize": "0.72rem", "fontWeight": "700",
+                 "letterSpacing": "0.08em", "color": COLORS["text_secondary"],
+                 "marginTop": "20px", "marginBottom": "10px"}),
+        dbc.Row([
+            dbc.Col(ai_recommendation_card(
+                "Increase safety stock by 12% in North region to reduce stockout risk from 3.8% to 1.2%.",
+                "+1.4 pp OTIF, -$280K stockout cost", confidence=0.82), md=4),
+            dbc.Col(ai_recommendation_card(
+                "Shift production from WH-East (101% loaded) to WH-West (62% loaded) — cost neutral.",
+                "-14 overtime hours, +0.8 pp schedule adherence", confidence=0.76), md=4),
+            dbc.Col(ai_recommendation_card(
+                "Defer 3 low-margin Portable SKUs in South to free 320 capacity hours for high-margin Split units.",
+                "+$180K margin, no service impact", confidence=0.71), md=4),
+        ]),
     ])
 

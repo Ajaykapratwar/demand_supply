@@ -26,33 +26,59 @@ _STATUS_COLOR = {
     "danger":  COLORS["danger"],
     "info":    COLORS["info"],
 }
+# §17 color-blind-safe icon paired with each status
+_STATUS_ICON = {"success": "✓", "warning": "⚠", "danger": "✕", "info": "●"}
+
+# §16.3 / §17 ReliabilityBadge
+_RELIABILITY_COLOR = {"high": COLORS["success"], "medium": COLORS["warning"], "low": COLORS["danger"]}
+_RELIABILITY_LABEL = {"high": "HIGH", "medium": "MED", "low": "LOW"}
 
 
 def kpi_card(title: str, value: str, target: str, delta: str,
-             trend: list, status: str = "success", id_suffix: str = "") -> dbc.Card:
-    """Blueprint §6.8: metric title · current value · target · delta · sparkline · status dot."""
+             trend: list, status: str = "success", id_suffix: str = "",
+             ai_generated: bool = False, reliability: str = "high") -> dbc.Card:
+    """Blueprint §17.6 8-field KPI card: title · value · target · delta · sparkline · status dot · AI badge · reliability badge."""
     color = _STATUS_COLOR.get(status, COLORS["info"])
+    icon  = _STATUS_ICON.get(status, "●")
     delta_positive = not delta.startswith("-")
     delta_color = COLORS["success"] if delta_positive else COLORS["danger"]
     delta_icon = "▲" if delta_positive else "▼"
+    rel_color = _RELIABILITY_COLOR.get(reliability, COLORS["info"])
+    rel_label = _RELIABILITY_LABEL.get(reliability, reliability.upper())
 
     return dbc.Card([
         dbc.CardBody([
-            # Status dot + title row
+            # Row 1: Status dot+icon + title + badges
             html.Div([
-                html.Span("●", style={"color": color, "fontSize": "0.7rem", "marginRight": "6px"}),
+                html.Span(f"{icon}", style={"color": color, "fontSize": "0.75rem",
+                                            "marginRight": "5px", "fontWeight": "700"}),
                 html.Span(title.upper(),
                           style={"fontSize": "0.72rem", "fontWeight": "600",
-                                 "letterSpacing": "0.08em", "color": COLORS["text_secondary"]}),
+                                 "letterSpacing": "0.08em", "color": COLORS["text_secondary"],
+                                 "flex": "1"}),
+                # §17 ReliabilityBadge
+                html.Span(rel_label, style={
+                    "fontSize": "0.6rem", "fontWeight": "700", "color": rel_color,
+                    "border": f"1px solid {rel_color}", "borderRadius": "3px",
+                    "padding": "0px 4px", "marginLeft": "4px",
+                }),
+                # §17 AI badge
+                *([
+                    html.Span("✨", title="AI Generated", style={
+                        "fontSize": "0.8rem", "marginLeft": "4px",
+                        "color": COLORS["accent"], "cursor": "default",
+                    })
+                ] if ai_generated else []),
             ], style={"display": "flex", "alignItems": "center", "marginBottom": "4px"}),
 
-            # KPI value
+            # Row 2: KPI value
             html.Div(value, style={
                 "fontSize": "2.4rem", "fontWeight": "700", "color": COLORS["text_primary"],
                 "lineHeight": "1.1", "marginBottom": "4px",
+                "fontFamily": "'JetBrains Mono', monospace",
             }),
 
-            # Target + delta row
+            # Row 3: Target + delta
             html.Div([
                 html.Span(f"Target: {target}",
                           style={"fontSize": "0.78rem", "color": COLORS["text_secondary"]}),
@@ -61,7 +87,7 @@ def kpi_card(title: str, value: str, target: str, delta: str,
                                  "fontWeight": "600", "marginLeft": "8px"}),
             ], style={"marginBottom": "8px"}),
 
-            # Sparkline
+            # Row 4: Sparkline
             _mini_sparkline(trend, color),
         ], style={"padding": "14px 16px"}),
     ],
@@ -69,7 +95,7 @@ def kpi_card(title: str, value: str, target: str, delta: str,
         "backgroundColor": COLORS["card"],
         "border": f"1px solid {COLORS['border']}",
         "borderRadius": "10px",
-        "boxShadow": f"0 2px 12px rgba(0,0,0,0.3)",
+        "boxShadow": "0 2px 12px rgba(0,0,0,0.3)",
         "transition": "transform 0.15s, box-shadow 0.15s",
     })
 
