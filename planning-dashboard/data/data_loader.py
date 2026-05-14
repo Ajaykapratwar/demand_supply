@@ -95,7 +95,7 @@ def get_executive_kpis(region="Global", category="All"):
     stockout  = round(o["Units_Backordered"].sum() / o["Units_Ordered"].sum() * 100, 2)
     dos       = round(w["Days_Of_Supply_Remaining"].mean(), 1)
     revenue   = round(s["Net_Revenue_INR"].sum() / 1e7, 1)   # in Cr INR
-    co2       = round(l["CO2_Emissions_Kg"].sum() / 1000, 0) # tCO2
+    co2       = round(l["CO2_Emissions_Kg"].sum() / 1e6, 1) # k tCO2
     mape      = round(ev[ev["label"] == "XGBoost P50"]["MAPE_%"].values[0], 1) if ev is not None else 18.4
     r2        = round(ev[ev["label"] == "XGBoost P50"]["R2"].values[0], 3) if ev is not None else 0.650
 
@@ -113,9 +113,9 @@ def get_executive_kpis(region="Global", category="All"):
         "stockout_rate":  {"value": stockout,   "target": 1.0,  "delta": stockout - 1.0,         "unit": "%",   "status": "danger"  if stockout > 2 else "warning", "spark": [stockout]*14},
         "mape":           {"value": mape,       "target": 15.0, "delta": mape - 15.0,            "unit": "%",   "status": "warning" if mape > 15 else "success",   "spark": [mape]*14},
         "dos":            {"value": dos,        "target": 35.0, "delta": dos - 35.0,             "unit": "days","status": "warning" if dos > 35 else "success",    "spark": tail14(w_w)},
-        "revenue":        {"value": revenue,    "target": revenue*1.05,"delta": revenue*0.05,    "unit": "Cr",  "status": "success",                               "spark": tail14(s_w)},
+        "revenue":        {"value": revenue,    "target": revenue*1.05,"delta": revenue*0.05,    "unit": "$M",  "status": "success",                               "spark": tail14(s_w)},
         "r2":             {"value": r2,         "target": 0.91, "delta": r2 - 0.91,             "unit": "",    "status": "warning" if r2 < 0.91 else "success",   "spark": [r2]*14},
-        "co2":            {"value": co2,        "target": co2*0.95,"delta": -(co2*0.05),         "unit": "tCO2","status": "warning",                               "spark": [co2]*14},
+        "co2":            {"value": co2,        "target": co2*0.95,"delta": -(co2*0.05),         "unit": "k tCO2","status": "warning",                               "spark": [co2]*14},
     }
 
 # ── Plan vs Actual ────────────────────────────────────────────────────────────
@@ -613,12 +613,12 @@ def get_financial_extended_kpis(region="Global", category="All"):
     carrying_cost = round(rev * 0.02, 2)
 
     return {
-        "eva":              {"value": eva,           "target": 0.0,  "delta": eva,                         "unit": "CrINR", "status": "success" if eva > 0 else "danger",   "spark": [eva] * 14, "ai_generated": True},
+        "eva":              {"value": eva,           "target": 0.0,  "delta": eva,                         "unit": "$M", "status": "success" if eva > 0 else "danger",   "spark": [eva] * 14, "ai_generated": True},
         "roic":             {"value": roic,          "target": 15.0, "delta": round(roic - 15.0, 1),      "unit": "%",     "status": "success" if roic >= 15 else "warning", "spark": [roic] * 14, "ai_generated": True},
         "logistics_pct":    {"value": logistics_pct, "target": 6.5,  "delta": round(logistics_pct - 6.5, 2), "unit": "%", "status": "danger" if logistics_pct > 9 else ("warning" if logistics_pct > 6.5 else "success"), "spark": [logistics_pct] * 14},
-        "cost_per_order":   {"value": cost_per_order,"target": 500,  "delta": round(cost_per_order - 500, 0), "unit": "₹", "status": "warning", "spark": [cost_per_order] * 14},
+        "cost_per_order":   {"value": cost_per_order,"target": 500,  "delta": round(cost_per_order - 500, 0), "unit": "$", "status": "warning", "spark": [cost_per_order] * 14},
         "cash_to_cash":     {"value": cash_to_cash,  "target": 45.0, "delta": round(cash_to_cash - 45.0, 1), "unit": "d", "status": "warning" if cash_to_cash > 55 else "success", "spark": [cash_to_cash] * 14},
-        "carrying_cost":    {"value": carrying_cost, "target": round(rev * 0.015, 2), "delta": round(carrying_cost - rev * 0.015, 2), "unit": "CrINR", "status": "warning", "spark": [carrying_cost] * 14},
+        "carrying_cost":    {"value": carrying_cost, "target": round(rev * 0.015, 2), "delta": round(carrying_cost - rev * 0.015, 2), "unit": "$M", "status": "warning", "spark": [carrying_cost] * 14},
     }
 
 # ── Blueprint v2.0 §11.5 — Extended Service KPIs ─────────────────────────────

@@ -30,15 +30,23 @@ def _util_gauge(row):
                "bgcolor": COLORS["surface"], "bordercolor": COLORS["border"]},
     ))
     apply_dark_layout(fig, height=180, margin=dict(l=10, r=10, t=50, b=10))
-    return dcc.Graph(figure=fig, config={"displayModeBar": False})
+    return html.Div(dcc.Graph(figure=fig, config={"displayModeBar": False}), className="col-span-3 chart-card")
 
 layout = html.Div([
-    html.H5("Capacity Planning", style={"color": COLORS["text_primary"], "fontWeight": "700", "marginBottom": "4px"}),
-    html.Div("Plant utilization gauges • 12-week load profile • Production schedule",
-             style={"color": COLORS["text_secondary"], "fontSize": "0.83rem", "marginBottom": "20px"}),
+    html.Div([
+        html.Div([
+            html.H5("Capacity Planning", style={
+                "color": COLORS["text_primary"], "fontWeight": "700",
+                "fontSize": "1.1rem", "margin": "0", "letterSpacing": "-0.01em",
+            }),
+            html.Div("Plant utilization gauges · 12-week load profile · Production schedule",
+                     style={"color": COLORS["text_secondary"], "fontSize": "0.8rem", "marginTop": "2px"}),
+        ]),
+    ], style={"display": "flex", "justifyContent": "space-between",
+              "alignItems": "center", "marginBottom": "20px"}),
     dcc.Loading(
         id="loading-capacity",
-        type="default",
+        type="dot",
         color=COLORS["primary"],
         children=html.Div(id="capacity-content")
     )
@@ -58,7 +66,7 @@ def update_capacity_page(filter_data):
     gantt = get_capacity_gantt(region, category)
     prod_kpis = get_production_kpis(region, category)  # §11.1
 
-    gauges = [dbc.Col(_util_gauge(cap.iloc[i]), xs=6, sm=3, className="mb-2") for i in range(len(cap))]
+    gauges = [_util_gauge(cap.iloc[i]) for i in range(len(cap))]
 
     _load_fig = go.Figure()
     plant_colors = [COLORS["chart_1"], COLORS["chart_2"], COLORS["chart_3"], COLORS["chart_4"], COLORS["chart_5"], COLORS["info"], COLORS["success"]]
@@ -112,30 +120,44 @@ def update_capacity_page(filter_data):
         narrative_card(narrative, dashboard_id="capacity"),
 
         # §11.1 Production KPI row
-        html.Div("PRODUCTION KPIs", style={"fontSize": "0.72rem", "fontWeight": "700",
-                 "letterSpacing": "0.08em", "color": COLORS["text_secondary"], "marginBottom": "8px"}),
+        html.Div([
+            html.Span("Production KPIs", style={
+                "fontSize": "0.68rem", "fontWeight": "700", "letterSpacing": "0.09em",
+                "color": COLORS["text_secondary"], "textTransform": "uppercase",
+            }),
+        ], style={"marginBottom": "10px"}),
         kpi_row(prod_formatted, cols=5),
 
-        # §13 Demand-surge scenario slider
-        html.Div("SCENARIO: DEMAND SURGE", style={"fontSize": "0.72rem", "fontWeight": "700",
-                 "letterSpacing": "0.08em", "color": COLORS["text_secondary"],
-                 "marginBottom": "6px", "marginTop": "12px"}),
-        dbc.Row([dbc.Col(
-            ScenarioSlider(
-                slider_id="capacity-demand-surge",
-                label="Demand Surge (%)",
-                min_val=0, max_val=50, default=10, step=5,
-                marks={0: "0%", 10: "+10%", 25: "+25%", 50: "+50%"},
-            ), md=6,
-        )], className="mb-3"),
+        html.Div([
+            html.Span("Scenario: Demand Surge", style={
+                "fontSize": "0.68rem", "fontWeight": "700", "letterSpacing": "0.09em",
+                "color": COLORS["text_secondary"], "textTransform": "uppercase",
+            }),
+        ], style={"marginBottom": "8px", "marginTop": "12px"}),
+        html.Div([
+            html.Div(
+                ScenarioSlider(
+                    slider_id="capacity-demand-surge",
+                    label="Demand Surge (%)",
+                    min_val=0, max_val=50, default=10, step=5,
+                    marks={0: "0%", 10: "+10%", 25: "+25%", 50: "+50%"},
+                ), className="col-span-6 chart-card"
+            )
+        ], className="dashboard-grid mb-4"),
 
-        html.Div("PLANT UTILIZATION", style={"fontSize": "0.72rem", "fontWeight": "700",
-                 "letterSpacing": "0.08em", "color": COLORS["text_secondary"], "marginBottom": "8px"}),
-        dbc.Row(gauges, className="mb-3"),
-        dbc.Row([
-            dbc.Col(dcc.Graph(figure=_load_fig,  config={"displayModeBar": False}), md=7, className="mb-3"),
-            dbc.Col(dcc.Graph(figure=_gantt_fig, config={"displayModeBar": False}), md=5, className="mb-3"),
-        ]),
-        dbc.Row([dbc.Col(dcc.Graph(figure=density_plot({"Utilization": cap["utilization"].tolist()}, title="Plant Utilization Density Distribution"), config={"displayModeBar": False}), className="mb-3")]),
-    ])
+        html.Div([
+            html.Span("Plant Utilization", style={
+                "fontSize": "0.68rem", "fontWeight": "700", "letterSpacing": "0.09em",
+                "color": COLORS["text_secondary"], "textTransform": "uppercase",
+            }),
+        ], style={"marginBottom": "10px"}),
+        html.Div(gauges, className="dashboard-grid mb-4"),
+        html.Div([
+            html.Div(dcc.Graph(figure=_load_fig,  config={"displayModeBar": False}), className="col-span-7 chart-card"),
+            html.Div(dcc.Graph(figure=_gantt_fig, config={"displayModeBar": False}), className="col-span-5 chart-card"),
+        ], className="dashboard-grid mb-4"),
+        html.Div([
+            html.Div(dcc.Graph(figure=density_plot({"Utilization": cap["utilization"].tolist()}, title="Plant Utilization Density Distribution"), config={"displayModeBar": False}), className="col-span-12 chart-card")
+        ], className="dashboard-grid mb-4"),
+    ], className="page-wrapper")
 

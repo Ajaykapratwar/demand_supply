@@ -11,12 +11,20 @@ from data.data_loader import get_sustainability_kpis, get_emissions_breakdown, g
 register_page(__name__, path="/sustainability", name="Sustainability")
 
 layout = html.Div([
-    html.H5("Sustainability", style={"color": COLORS["text_primary"], "fontWeight": "700", "marginBottom": "4px"}),
-    html.Div("Carbon KPIs • Emissions breakdown • Cost vs Carbon Pareto",
-             style={"color": COLORS["text_secondary"], "fontSize": "0.83rem", "marginBottom": "20px"}),
+    html.Div([
+        html.Div([
+            html.H5("Sustainability", style={
+                "color": COLORS["text_primary"], "fontWeight": "700",
+                "fontSize": "1.1rem", "margin": "0", "letterSpacing": "-0.01em",
+            }),
+            html.Div("Carbon KPIs · Emissions breakdown · Cost vs Carbon Pareto",
+                     style={"color": COLORS["text_secondary"], "fontSize": "0.8rem", "marginTop": "2px"}),
+        ]),
+    ], style={"display": "flex", "justifyContent": "space-between",
+              "alignItems": "center", "marginBottom": "20px"}),
     dcc.Loading(
         id="loading-sustainability",
-        type="default",
+        type="dot",
         color=COLORS["primary"],
         children=html.Div(id="sustainability-content")
     )
@@ -85,9 +93,9 @@ def update_sustainability_page(filter_data):
 
     return html.Div([
         kpi_row(_kpis, cols=3),
-        dbc.Row([
-            dbc.Col(dcc.Graph(figure=_donut_fig,  config={"displayModeBar": False}), md=5, className="mb-3"),
-            dbc.Col(dcc.Graph(figure=_pareto_fig, config={"displayModeBar": False}), md=4, className="mb-3"),
-            dbc.Col(_progress_card, md=3, className="mb-3"),
-        ]),
-    ])
+        html.Div([
+            html.Div(dcc.Graph(figure=_donut_fig,  config={"displayModeBar": False}), className="col-span-5 chart-card"),
+            html.Div(dcc.Graph(figure=_pareto_fig, config={"displayModeBar": False}), className="col-span-4 chart-card"),
+            html.Div(_progress_card, className="col-span-3 chart-card"),
+        ], className="dashboard-grid mb-4"),
+    ], className="page-wrapper")

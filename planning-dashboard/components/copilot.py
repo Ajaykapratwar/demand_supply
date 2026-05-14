@@ -174,14 +174,12 @@ def build_copilot_panel():
         ], style={"padding": "10px 14px", "borderTop": f"1px solid {COLORS['border']}"}),
 
     ], style={
-        "backgroundColor": COLORS["card"],
-        "borderLeft": f"1px solid {COLORS['border']}",
-        "width": "300px",
+        "backgroundColor": "var(--surface)",
+        "borderLeft": "1px solid var(--border)",
+        "width": "380px",
         "flexShrink": "0",
         "display": "flex",
         "flexDirection": "column",
-        "height": "calc(100vh - 60px)",
-        "position": "sticky",
-        "top": "60px",
+        "height": "100vh",
         "overflowY": "hidden",
-    })
+    }, id="copilot-panel")

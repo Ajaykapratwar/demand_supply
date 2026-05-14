@@ -3,6 +3,14 @@ hvac_forecast_system/.pytest_cache
 hvac_forecast_system/.venv
 hvac_forecast_system/.env
 hvac_forecast_system/src/__pycache__
+hvac_control_tower/__pycache__
+hvac_control_tower/.venv
+hvac_control_tower/.env
+hvac_control_tower/src/__pycache__
+planning-dashboard/__pycache__
+planning-dashboard/.venv
+planning-dashboard/.env
+planning-dashboard/src/__pycache__
 venv/
 venv/*
 !venv/README.md

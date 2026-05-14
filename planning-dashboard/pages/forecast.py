@@ -134,14 +134,18 @@ def update_forecast_page(filter_data):
         calib_banner,
         kpi_row(formatted_kpis, cols=6),
         # §16.3 Fan chart
-        dbc.Row([
-            dbc.Col(dcc.Graph(figure=new_fan_fig, config={"displayModeBar": False}), md=8, className="mb-3"),
-            dbc.Col(dcc.Graph(figure=bias_fig,    config={"displayModeBar": False}), md=4, className="mb-3"),
-        ]),
-        dbc.Row([dbc.Col(dcc.Graph(figure=fva_fig, config={"displayModeBar": False}), className="mb-3")]),
-        dbc.Row([
-            dbc.Col(dcc.Graph(figure=quantile_dot_plot(outcomes=np.random.normal(loc=quantiles["p50"][-1] if len(quantiles["p50"]) > 0 else 100, scale=(quantiles["p90"][-1] - quantiles["p10"][-1]) / 3.29 if len(quantiles["p90"]) > 0 else 15, size=100).tolist(), title="Next Period Quantile Dot Plot"), config={"displayModeBar": False}), md=6, className="mb-3"),
-            dbc.Col(explain_fig, md=6, className="mb-3")
-        ]),
-    ])
+        html.Div([
+            html.Div(dcc.Graph(figure=new_fan_fig, config={"displayModeBar": False}), className="col-span-8 chart-card"),
+            html.Div(dcc.Graph(figure=bias_fig,    config={"displayModeBar": False}), className="col-span-4 chart-card"),
+        ], className="dashboard-grid mb-4"),
+        
+        html.Div([
+            html.Div(dcc.Graph(figure=fva_fig, config={"displayModeBar": False}), className="col-span-12 chart-card"),
+        ], className="dashboard-grid mb-4"),
+        
+        html.Div([
+            html.Div(dcc.Graph(figure=quantile_dot_plot(outcomes=np.random.normal(loc=quantiles["p50"][-1] if len(quantiles["p50"]) > 0 else 100, scale=(quantiles["p90"][-1] - quantiles["p10"][-1]) / 3.29 if len(quantiles["p90"]) > 0 else 15, size=100).tolist(), title="Next Period Quantile Dot Plot"), config={"displayModeBar": False}), className="col-span-6 chart-card"),
+            html.Div(explain_fig, className="col-span-6 chart-card"),
+        ], className="dashboard-grid mb-4"),
+    ], className="page-wrapper")
 

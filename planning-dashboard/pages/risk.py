@@ -16,12 +16,20 @@ from data.data_loader import (
 register_page(__name__, path="/risk", name="Risk Monitoring")
 
 layout = html.Div([
-    html.H5("Risk Monitoring", style={"color": COLORS["text_primary"], "fontWeight": "700", "marginBottom": "4px"}),
-    html.Div("Composite risk score • Probability × impact matrix • Mitigation actions",
-             style={"color": COLORS["text_secondary"], "fontSize": "0.83rem", "marginBottom": "20px"}),
+    html.Div([
+        html.Div([
+            html.H5("Risk Monitoring", style={
+                "color": COLORS["text_primary"], "fontWeight": "700",
+                "fontSize": "1.1rem", "margin": "0", "letterSpacing": "-0.01em",
+            }),
+            html.Div("Composite risk score · Probability x impact matrix · Mitigation actions",
+                     style={"color": COLORS["text_secondary"], "fontSize": "0.8rem", "marginTop": "2px"}),
+        ]),
+    ], style={"display": "flex", "justifyContent": "space-between",
+              "alignItems": "center", "marginBottom": "20px"}),
     dcc.Loading(
         id="loading-risk",
-        type="default",
+        type="dot",
         color=COLORS["primary"],
         children=html.Div(id="risk-content")
     )
@@ -137,21 +145,27 @@ def update_risk_page(filter_data):
         ),
 
         kpi_row(_kpis, cols=4),
-        dbc.Row([
-            dbc.Col(dcc.Graph(figure=_gauge_fig, config={"displayModeBar": False}), md=4, className="mb-3"),
-            dbc.Col(dcc.Graph(figure=_pi_fig,    config={"displayModeBar": False}), md=8, className="mb-3"),
-        ]),
-        dbc.Row([dbc.Col(dcc.Graph(figure=_mit_fig, config={"displayModeBar": False}), className="mb-3")]),
-        dbc.Row([dbc.Col(dcc.Graph(figure=tornado_chart(
-            {
-                "Supplier Default": {"downside": -15.0, "upside": 25.0},
-                "Transport Delay": {"downside": -5.0, "upside": 12.0},
-                "Demand Spike": {"downside": -20.0, "upside": 35.0},
-                "FX Fluctuation": {"downside": -8.0, "upside": 8.0},
-                "Labor Strike": {"downside": -12.0, "upside": 18.0}
-            },
-            title="Risk Sensitivity Analysis (EBITDA Impact %)"
-        ), config={"displayModeBar": False}), className="mb-3")]),
-        dbc.Row([dbc.Col(dcc.Graph(figure=supplier_network_graph(*get_supplier_network(region=region)), config={"displayModeBar": False}), className="mb-3")]),
-    ])
+        html.Div([
+            html.Div(dcc.Graph(figure=_gauge_fig, config={"displayModeBar": False}), className="col-span-4 chart-card"),
+            html.Div(dcc.Graph(figure=_pi_fig,    config={"displayModeBar": False}), className="col-span-8 chart-card"),
+        ], className="dashboard-grid mb-4"),
+        html.Div([
+            html.Div(dcc.Graph(figure=_mit_fig, config={"displayModeBar": False}), className="col-span-12 chart-card"),
+        ], className="dashboard-grid mb-4"),
+        html.Div([
+            html.Div(dcc.Graph(figure=tornado_chart(
+                {
+                    "Supplier Default": {"downside": -15.0, "upside": 25.0},
+                    "Transport Delay": {"downside": -5.0, "upside": 12.0},
+                    "Demand Spike": {"downside": -20.0, "upside": 35.0},
+                    "FX Fluctuation": {"downside": -8.0, "upside": 8.0},
+                    "Labor Strike": {"downside": -12.0, "upside": 18.0}
+                },
+                title="Risk Sensitivity Analysis (EBITDA Impact %)"
+            ), config={"displayModeBar": False}), className="col-span-12 chart-card"),
+        ], className="dashboard-grid mb-4"),
+        html.Div([
+            html.Div(dcc.Graph(figure=supplier_network_graph(*get_supplier_network(region=region)), config={"displayModeBar": False}), className="col-span-12 chart-card"),
+        ], className="dashboard-grid mb-4"),
+    ], className="page-wrapper")
 

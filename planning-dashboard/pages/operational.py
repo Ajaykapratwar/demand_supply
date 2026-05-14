@@ -94,15 +94,50 @@ def update_operational_page(filter_data):
                       yaxis=dict(title="Region", gridcolor=COLORS["border"]))
 
     return html.Div([
-        html.H5("Operational Planning", style={"color": COLORS["text_primary"], "fontWeight": "700", "marginBottom": "4px"}),
-        html.Div(f"Short-horizon demand-supply balance • Inventory status • Exception queue — {filter_data.get('horizon', 'Tactical')} Horizon",
-                 style={"color": COLORS["text_secondary"], "fontSize": "0.83rem", "marginBottom": "20px"}),
-        dbc.Row([dbc.Col(dcc.Graph(figure=heatmap_fig, config={"displayModeBar": False}), className="mb-3")]),
-        html.Div("INVENTORY DAYS-OF-SUPPLY BY REGION", style={"fontSize": "0.72rem", "fontWeight": "700",
-                 "letterSpacing": "0.08em", "color": COLORS["text_secondary"], "marginBottom": "8px"}),
+        # Page Header
+        html.Div([
+            html.Div([
+                html.H5("Operational Planning", style={
+                    "color": COLORS["text_primary"], "fontWeight": "700",
+                    "fontSize": "1.1rem", "margin": "0", "letterSpacing": "-0.01em",
+                }),
+                html.Div(f"Short-horizon demand-supply balance · Inventory status · Exception queue",
+                         style={"color": COLORS["text_secondary"], "fontSize": "0.8rem", "marginTop": "2px"}),
+            ]),
+        ], style={"display": "flex", "justifyContent": "space-between", "alignItems": "center",
+                  "marginBottom": "20px"}),
+
+        dbc.Row([dbc.Col(html.Div([
+            html.Div(style={"padding": "14px 16px 0", "marginBottom": "-4px"}, children=[
+                html.Span("Supply–Demand Balance", style={
+                    "fontSize": "0.78rem", "fontWeight": "600",
+                    "color": COLORS["text_secondary"], "letterSpacing": "0.04em",
+                }),
+            ]),
+            dcc.Graph(figure=heatmap_fig, config={"displayModeBar": False}),
+        ], style={"background": COLORS["card"], "border": f"1px solid {COLORS['border']}",
+                  "borderRadius": "10px", "overflow": "hidden"}), className="mb-3")]),
+
+        html.Div([
+            html.Span("Inventory Days-of-Supply by Region", style={
+                "fontSize": "0.68rem", "fontWeight": "700", "letterSpacing": "0.09em",
+                "color": COLORS["text_secondary"], "textTransform": "uppercase",
+            }),
+        ], style={"marginBottom": "10px"}),
         dbc.Row([dbc.Col(_dos_gauge(r), xs=6, sm=4, md=2, className="mb-2") for r in dos_data],
-                className="mb-3"),
-        html.Div("EXCEPTION ACTION QUEUE", style={"fontSize": "0.72rem", "fontWeight": "700",
-                 "letterSpacing": "0.08em", "color": COLORS["text_secondary"], "marginBottom": "8px"}),
+                className="mb-4"),
+
+        html.Div([
+            html.Span("Exception Action Queue", style={
+                "fontSize": "0.68rem", "fontWeight": "700", "letterSpacing": "0.09em",
+                "color": COLORS["text_secondary"], "textTransform": "uppercase",
+            }),
+            html.Span(f"{len(queue)} items", style={
+                "fontSize": "0.65rem", "color": COLORS["primary"],
+                "background": "rgba(59,130,246,0.1)", "border": "1px solid rgba(59,130,246,0.25)",
+                "borderRadius": "99px", "padding": "2px 9px", "fontWeight": "600",
+                "marginLeft": "10px",
+            }),
+        ], style={"display": "flex", "alignItems": "center", "marginBottom": "10px"}),
         dbc.ListGroup([_action_row(r) for r in queue]),
     ])

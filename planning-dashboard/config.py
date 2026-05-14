@@ -1,41 +1,48 @@
 # config.py — Blueprint §6.6 color palette + §6.7 typography constants
 
 COLORS = {
-    "background":     "#0d1117",
-    "surface":        "#161b22",
-    "card":           "#1c2128",
-    "border":         "#30363d",
-    "primary":        "#58a6ff",
-    "success":        "#3fb950",
-    "warning":        "#d29922",
-    "danger":         "#f85149",
-    "info":           "#58a6ff",
-    "text_primary":   "#e6edf3",
-    "text_secondary": "#8b949e",
-    "accent":         "#bc8cff",
-    "chart_1":        "#58a6ff",
-    "chart_2":        "#3fb950",
-    "chart_3":        "#d29922",
-    "chart_4":        "#f85149",
-    "chart_5":        "#bc8cff",
+    "background":     "rgba(0,0,0,0)",
+    "surface":        "rgba(0,0,0,0)",
+    "card":           "rgba(0,0,0,0)",
+    "border":         "rgba(148, 163, 184, 0.2)",
+    "primary":        "#4F6EF7",
+    "success":        "#16a34a",
+    "warning":        "#d97706",
+    "danger":         "#dc2626",
+    "info":           "#0ea5e9",
+    "text_primary":   "#475569", # Fallback for plotly text
+    "text_secondary": "#94a3b8", # Fallback for plotly text
+    "accent":         "#8b5cf6",
+    "chart_1":        "#4F6EF7",
+    "chart_2":        "#0ea5e9",
+    "chart_3":        "#16a34a",
+    "chart_4":        "#d97706",
+    "chart_5":        "#8b5cf6",
 }
 
-# Shared Plotly layout defaults (dark theme)
+# Shared Plotly layout defaults
 PLOT_LAYOUT = dict(
-    paper_bgcolor=COLORS["card"],
-    plot_bgcolor=COLORS["surface"],
-    font=dict(color=COLORS["text_primary"], family="Inter, sans-serif", size=12),
-    margin=dict(l=40, r=20, t=40, b=40),
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    font=dict(color="#64748b", family="DM Sans, sans-serif", size=11),
+    margin=dict(l=40, r=16, t=36, b=36),
 )
 
 # Shared axis style helper
-AXIS_STYLE = dict(gridcolor=COLORS["border"], zerolinecolor=COLORS["border"],
-                  tickfont=dict(color=COLORS["text_secondary"]),
-                  title_font=dict(color=COLORS["text_secondary"]))
+AXIS_STYLE = dict(
+    gridcolor="rgba(148, 163, 184, 0.15)",
+    zerolinecolor="rgba(148, 163, 184, 0.15)",
+    tickfont=dict(color="#94a3b8", size=10),
+    title_font=dict(color="#94a3b8", size=11),
+)
 
 # Shared legend style
-LEGEND_STYLE = dict(bgcolor=COLORS["card"], bordercolor=COLORS["border"],
-                    borderwidth=1, font=dict(color=COLORS["text_secondary"]))
+LEGEND_STYLE = dict(
+    bgcolor="rgba(0,0,0,0)",
+    bordercolor="rgba(0,0,0,0)",
+    borderwidth=0,
+    font=dict(color="#64748b", size=11),
+)
 
 
 def hex_to_rgba(hex_color: str, alpha: float = 0.15) -> str:
@@ -46,28 +53,38 @@ def hex_to_rgba(hex_color: str, alpha: float = 0.15) -> str:
 
 
 def apply_dark_layout(fig, title="", height=300, margin=None, **kwargs):
-    """Apply dark theme to a figure. Use this instead of spreading PLOT_LAYOUT."""
-    m = margin or dict(l=40, r=20, t=40, b=40)
+    """Apply theme layout to a figure."""
+    m = margin or dict(l=40, r=16, t=36, b=36)
     fig.update_layout(
-        paper_bgcolor=COLORS["card"],
-        plot_bgcolor=COLORS["surface"],
-        font=dict(color=COLORS["text_primary"], family="Inter, sans-serif", size=12),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color=COLORS["text_primary"], family="Inter, sans-serif", size=11),
         margin=m,
-        title=dict(text=title, font=dict(color=COLORS["text_primary"], size=13)),
+        title=dict(
+            text=title,
+            font=dict(color=COLORS["text_secondary"], size=11, family="Inter"),
+            x=0, xanchor="left",
+        ),
         height=height,
         **kwargs,
     )
-    fig.update_xaxes(gridcolor=COLORS["border"], zerolinecolor=COLORS["border"],
-                     tickfont=dict(color=COLORS["text_secondary"]))
-    fig.update_yaxes(gridcolor=COLORS["border"], zerolinecolor=COLORS["border"],
-                     tickfont=dict(color=COLORS["text_secondary"]))
+    fig.update_xaxes(
+        gridcolor="#1e2a3a", zerolinecolor="#1e2a3a",
+        tickfont=dict(color=COLORS["text_secondary"], size=10),
+        showgrid=True, gridwidth=1,
+    )
+    fig.update_yaxes(
+        gridcolor="#1e2a3a", zerolinecolor="#1e2a3a",
+        tickfont=dict(color=COLORS["text_secondary"], size=10),
+        showgrid=True, gridwidth=1,
+    )
     return fig
 
 # Blueprint §6.7 typography
 TYPOGRAPHY = {
-    "kpi_value_size": "2.6rem",
-    "kpi_title_size": "0.72rem",
-    "body_size": "0.875rem",
+    "kpi_value_size": "2.2rem",
+    "kpi_title_size": "0.7rem",
+    "body_size": "0.85rem",
     "header_weight": "700",
     "header_spacing": "0.08em",
 }

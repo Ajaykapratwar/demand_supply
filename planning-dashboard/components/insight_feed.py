@@ -1,68 +1,93 @@
 from dash import html
 import dash_bootstrap_components as dbc
-from datetime import datetime
+from config import COLORS
+
 
 def generate_insights():
     """
     Simulates "Rule + LLM" generated insights based on current dashboard data.
     In a real implementation, this would call the LLM backend or Rules Engine.
     """
-    insights = [
+    return [
         {
-            "time": "10 Mins Ago",
+            "time": "10 min ago",
             "type": "Risk",
-            "message": "Supplier ACME Corp designated as Critical Risk by Fuzzy Logic Engine. Consider alternative sourcing.",
-            "color": "danger",
-            "icon": "bi-shield-exclamation"
+            "message": "Supplier ACME Corp designated Critical Risk. Consider alternative sourcing.",
+            "color": COLORS["danger"],
+            "dot_color": COLORS["danger"],
+            "icon": "bi-shield-exclamation",
         },
         {
-            "time": "1 Hour Ago",
+            "time": "1 hr ago",
             "type": "Approval",
-            "message": "Rules Engine auto-approved 14 low-value replenishment orders saving 2.5 hours of manual review.",
-            "color": "success",
-            "icon": "bi-check-circle"
+            "message": "Rules Engine auto-approved 14 replenishment orders — saved 2.5 hrs.",
+            "color": COLORS["success"],
+            "dot_color": COLORS["success"],
+            "icon": "bi-check-circle",
         },
         {
-            "time": "3 Hours Ago",
+            "time": "3 hrs ago",
             "type": "Forecast",
-            "message": "Conformal recalibration triggered for APAC region due to quantile coverage dropping below 90%.",
-            "color": "warning",
-            "icon": "bi-graph-down"
+            "message": "Conformal recalibration triggered for APAC — quantile coverage < 90%.",
+            "color": COLORS["warning"],
+            "dot_color": COLORS["warning"],
+            "icon": "bi-graph-down",
         },
         {
-            "time": "1 Day Ago",
+            "time": "1 day ago",
             "type": "Simulation",
-            "message": "Digital Twin simulation suggests a 15% increase in bullwhip effect if lead times extend by 2 days.",
-            "color": "info",
-            "icon": "bi-cpu"
-        }
+            "message": "Digital Twin: +15% bullwhip effect if lead times extend 2 days.",
+            "color": COLORS["primary"],
+            "dot_color": COLORS["primary"],
+            "icon": "bi-cpu",
+        },
     ]
-    return insights
+
 
 def insight_feed_layout():
-    """
-    Returns the UI layout for the Automated Insight Feed.
-    """
+    """Returns the UI layout for the Automated Insight Feed."""
     insights = generate_insights()
-    
-    feed_items = []
-    for insight in insights:
-        item = dbc.ListGroupItem(
-            [
+
+    items = []
+    for ins in insights:
+        items.append(
+            html.Div([
+                # Icon dot
+                html.Div(style={
+                    "width": "7px", "height": "7px", "borderRadius": "50%",
+                    "background": ins["dot_color"],
+                    "marginRight": "9px", "marginTop": "3px",
+                    "flexShrink": "0",
+                    "boxShadow": f"0 0 5px {ins['dot_color']}",
+                }),
                 html.Div([
-                    html.I(className=f"bi {insight['icon']} text-{insight['color']} fs-4 me-3"),
                     html.Div([
-                        html.Div(insight['type'], className="fw-bold text-light"),
-                        html.Div(insight['message'], className="small text-muted mb-1"),
-                        html.Small(insight['time'], className=f"text-{insight['color']} fw-bold")
-                    ], className="flex-grow-1")
-                ], className="d-flex w-100")
-            ],
-            className="bg-dark border-secondary mb-2 rounded"
+                        html.Span(ins["type"], style={
+                            "fontSize": "0.68rem", "fontWeight": "700",
+                            "color": ins["color"], "letterSpacing": "0.05em",
+                            "textTransform": "uppercase", "marginRight": "6px",
+                        }),
+                        html.Span(ins["time"], style={
+                            "fontSize": "0.63rem", "color": COLORS["text_secondary"],
+                        }),
+                    ], style={"marginBottom": "3px"}),
+                    html.Div(ins["message"], style={
+                        "fontSize": "0.77rem", "color": COLORS["text_secondary"],
+                        "lineHeight": "1.45",
+                    }),
+                ], style={"flex": "1", "minWidth": "0"}),
+            ], style={
+                "display": "flex",
+                "padding": "10px 10px",
+                "borderRadius": "7px",
+                "marginBottom": "4px",
+                "background": "rgba(255,255,255,0.02)",
+                "border": f"1px solid {COLORS['border']}",
+                "transition": "all 0.15s",
+                "cursor": "default",
+            }, className="insight-item")
         )
-        feed_items.append(item)
-        
+
     return html.Div([
-        html.H5([html.I(className="bi bi-lightning-charge-fill text-warning me-2"), "Live Insights"], className="text-light mb-3"),
-        dbc.ListGroup(feed_items, flush=True)
-    ], className="insight-feed-container", style={"maxHeight": "400px", "overflowY": "auto"})
+        html.Div(items),
+    ], className="insight-feed-container", style={"maxHeight": "360px", "overflowY": "auto"})

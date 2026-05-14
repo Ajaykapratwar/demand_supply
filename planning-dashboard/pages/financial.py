@@ -15,12 +15,20 @@ from data.data_loader import (
 register_page(__name__, path="/financial", name="Financial Impact")
 
 layout = html.Div([
-    html.H5("Financial Impact", style={"color": COLORS["text_primary"], "fontWeight": "700", "marginBottom": "4px"}),
-    html.Div("Revenue/margin KPIs • Scenario P&L bridge • Budget vs forecast",
-             style={"color": COLORS["text_secondary"], "fontSize": "0.83rem", "marginBottom": "20px"}),
+    html.Div([
+        html.Div([
+            html.H5("Financial Impact", style={
+                "color": COLORS["text_primary"], "fontWeight": "700",
+                "fontSize": "1.1rem", "margin": "0", "letterSpacing": "-0.01em",
+            }),
+            html.Div("Revenue/margin KPIs · Scenario P&L bridge · Budget vs forecast",
+                     style={"color": COLORS["text_secondary"], "fontSize": "0.8rem", "marginTop": "2px"}),
+        ]),
+    ], style={"display": "flex", "justifyContent": "space-between",
+              "alignItems": "center", "marginBottom": "20px"}),
     dcc.Loading(
         id="loading-financial",
-        type="default",
+        type="dot",
         color=COLORS["primary"],
         children=html.Div(id="financial-content")
     )
@@ -91,7 +99,7 @@ def update_financial_page(filter_data):
     roic_val = _ext["roic"]["value"]
     log_pct  = _ext["logistics_pct"]["value"]
     narrative = (
-        f"**EVA {eva_val:+.1f} Cr INR** "
+        f"**EVA {eva_val:+.1f} $M** "
         f"({'✓ value creation' if eva_val > 0 else '✕ destroying value'}). "
         f"**ROIC {roic_val:.1f}%** vs 15% hurdle rate. "
         f"**Logistics cost {log_pct:.1f}% of revenue** "
@@ -103,10 +111,12 @@ def update_financial_page(filter_data):
         narrative_card(narrative, dashboard_id="financial"),
 
         # §11.3 Extended financial KPIs
-        html.Div("EXTENDED FINANCIAL KPIs", style={
-            "fontSize": "0.72rem", "fontWeight": "700",
-            "letterSpacing": "0.08em", "color": COLORS["text_secondary"], "marginBottom": "8px",
-        }),
+        html.Div([
+            html.Span("Extended Financial KPIs", style={
+                "fontSize": "0.68rem", "fontWeight": "700", "letterSpacing": "0.09em",
+                "color": COLORS["text_secondary"], "textTransform": "uppercase",
+            }),
+        ], style={"marginBottom": "10px"}),
         kpi_row(ext_fmt, cols=6),
 
         # §12 Interdependency strip

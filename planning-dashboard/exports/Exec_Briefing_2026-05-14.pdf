@@ -1,0 +1,2 @@
+Mock BIRT Report generated in PDF format.
+To generate actual reports, install BIRT Runtime and set BIRT_HOME.

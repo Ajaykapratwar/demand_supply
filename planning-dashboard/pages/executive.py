@@ -24,49 +24,74 @@ def update_executive_page(filter_data):
     region = filter_data.get("region", "Global")
     category = filter_data.get("category", "All")
     horizon = filter_data.get("horizon", "Tactical")
-    
+
     kpis = get_executive_kpis(region=region, category=category)
     pva_df = get_plan_vs_actual(region=region, category=category)
     queue = get_action_queue(region=region, category=category)
     scenario_df = get_scenario_comparison(region=region, category=category)
-    
-    # Format KPIs for kpi_row
+
     kpi_labels = {
         "otif": "OTIF", "fill_rate": "Fill Rate", "stockout_rate": "Stockout Rate",
         "mape": "Forecast MAPE", "dos": "Days of Supply", "revenue": "Revenue",
         "r2": "Model R²", "co2": "Carbon (tCO2)"
     }
     formatted_kpis = {kpi_labels.get(k, k): v for k, v in kpis.items()}
-    
-    # PVA Chart & Scenario Radar
+
     pva_fig = charts.plan_vs_actual_chart(pva_df)
     scenario_fig = charts.scenario_radar(scenario_df)
-    
-    # Action Queue / Risk Strip
-    def _risk_badge(r):
-        color = {"CRITICAL": COLORS["danger"], "HIGH": COLORS["warning"], "MEDIUM": COLORS["primary"]}.get(r["priority"], COLORS["text_secondary"])
-        return dbc.Card(dbc.CardBody([
-            html.Div([
-                html.Span("●", style={"color": color, "marginRight": "6px"}),
-                html.Span(r["sku"] + " - " + r["region"], style={"fontWeight": "600", "fontSize": "0.82rem", "color": COLORS["text_primary"]}),
-                html.Span(r["priority"], style={"color": color, "fontSize": "0.7rem", "fontWeight": "700",
-                                            "border": f"1px solid {color}", "borderRadius": "4px",
-                                            "padding": "1px 6px", "marginLeft": "8px"}),
-            ], style={"display": "flex", "alignItems": "center", "marginBottom": "4px"}),
-            html.Div(r["issue"], style={"fontSize": "0.76rem", "color": COLORS["text_secondary"]}),
-            html.Div("→ " + r["action"], style={"fontSize": "0.72rem", "color": color, "marginTop": "4px"}),
-            dbc.Progress(value=100 if r["priority"] == "CRITICAL" else 75 if r["priority"] == "HIGH" else 50,
-                         color="danger" if r["priority"]=="CRITICAL" else "warning" if r["priority"]=="HIGH" else "primary",
-                         style={"height": "4px", "marginTop": "6px", "backgroundColor": COLORS["border"]}),
-        ], style={"padding": "10px 14px"}),
-        style={"backgroundColor": COLORS["surface"], "border": f"1px solid {color}44", "borderRadius": "8px"})
 
-    # §17.6 apply alert-threshold-aware status to OTIF and risk-driven KPIs
+    # Priority color map
+    def _priority_color(priority):
+        return {
+            "CRITICAL": COLORS["danger"],
+            "HIGH": COLORS["warning"],
+            "MEDIUM": COLORS["primary"],
+        }.get(priority, COLORS["text_secondary"])
+
+    def _risk_badge(r):
+        color = _priority_color(r["priority"])
+        return html.Div([
+            # Header
+            html.Div([
+                html.Div(style={
+                    "width": "8px", "height": "8px", "borderRadius": "50%",
+                    "background": color, "marginRight": "8px", "flexShrink": "0",
+                    "boxShadow": f"0 0 6px {color}",
+                }),
+                html.Span(f"{r['sku']} — {r['region']}", style={
+                    "fontWeight": "600", "fontSize": "0.82rem", "color": COLORS["text_primary"],
+                    "flex": "1",
+                }),
+                html.Span(r["priority"], style={
+                    "color": color, "fontSize": "0.62rem", "fontWeight": "700",
+                    "border": f"1px solid {color}", "borderRadius": "4px",
+                    "padding": "2px 7px", "letterSpacing": "0.04em",
+                }),
+            ], style={"display": "flex", "alignItems": "center", "marginBottom": "8px"}),
+            html.Div(r["issue"], style={"fontSize": "0.78rem", "color": COLORS["text_secondary"], "marginBottom": "6px"}),
+            html.Div(f"→ {r['action']}", style={"fontSize": "0.75rem", "color": color, "fontWeight": "500"}),
+            # Progress bar
+            html.Div([
+                html.Div(style={
+                    "height": "3px",
+                    "width": "100%" if r["priority"] == "CRITICAL" else "75%" if r["priority"] == "HIGH" else "50%",
+                    "background": color,
+                    "borderRadius": "99px",
+                }),
+            ], style={"background": COLORS["border"], "borderRadius": "99px", "marginTop": "10px", "overflow": "hidden"}),
+        ], style={
+            "background": COLORS["card"],
+            "border": f"1px solid {COLORS['border']}",
+            "borderLeft": f"3px solid {color}",
+            "borderRadius": "8px",
+            "padding": "14px 16px",
+            "transition": "all 0.18s ease",
+        })
+
     thr = ALERT_THRESHOLDS["executive"]
     svc_status = "danger" if kpis["fill_rate"]["value"] < thr["service_level_red"] else "success"
     kpis["fill_rate"]["status"] = svc_status
 
-    # §14.1 Narrative card — AI-generated executive brief
     narrative_text = (
         f"**Fill Rate** at **{kpis['fill_rate']['value']:.1f}%** vs 98% target "
         f"({'✕ below' if kpis['fill_rate']['value'] < thr['service_level_red'] else '✓ on-track'} threshold). "
@@ -76,26 +101,88 @@ def update_executive_page(filter_data):
     )
 
     return html.Div([
-        html.H5("Executive Summary", style={"color": COLORS["text_primary"], "fontWeight": "700", "marginBottom": "4px"}),
-        html.Div(f"Real-time cross-functional KPI overview — {horizon} Horizon",
-                 style={"color": COLORS["text_secondary"], "fontSize": "0.83rem", "marginBottom": "16px"}),
+        # ── Page Header ────────────────────────────────────────
+        html.Div([
+            html.Div([
+                html.H5("Executive Summary", style={
+                    "color": COLORS["text_primary"], "fontWeight": "700",
+                    "fontSize": "1.1rem", "margin": "0", "letterSpacing": "-0.01em",
+                }),
+                html.Div(f"Real-time cross-functional KPI overview · {horizon} Horizon", style={
+                    "color": COLORS["text_secondary"], "fontSize": "0.8rem", "marginTop": "2px",
+                }),
+            ]),
+            # Timestamp
+            html.Div([
+                html.I(className="bi bi-clock",
+                       style={"color": COLORS["text_secondary"], "fontSize": "0.78rem", "marginRight": "5px"}),
+                html.Span("Updated just now", style={"color": COLORS["text_secondary"], "fontSize": "0.78rem"}),
+            ], style={"display": "flex", "alignItems": "center"}),
+        ], style={
+            "display": "flex", "justifyContent": "space-between", "alignItems": "center",
+            "marginBottom": "20px",
+        }),
 
-        # §14.1 AI Narrative card
+        # ── AI Narrative ───────────────────────────────────────
         narrative_card(narrative_text, dashboard_id="executive"),
 
+        # ── KPI Row ────────────────────────────────────────────
         kpi_row(formatted_kpis, cols=4),
-        dbc.Row([
-            dbc.Col(dcc.Graph(figure=pva_fig, config={"displayModeBar": False}), md=8, className="mb-3"),
-            dbc.Col(dcc.Graph(figure=scenario_fig, config={"displayModeBar": False}), md=4, className="mb-3"),
-        ]),
-        html.Div("ACTION QUEUE — LIVE ANOMALIES", style={"fontSize": "0.72rem", "fontWeight": "700",
-                 "letterSpacing": "0.08em", "color": COLORS["text_secondary"], "marginBottom": "10px"}),
-        dbc.Row([dbc.Col(_risk_badge(r), md=4, className="mb-2") for r in queue]),
 
-        # §14.1 AI Recommendation cards
-        html.Div("AI RECOMMENDATIONS", style={"fontSize": "0.72rem", "fontWeight": "700",
-                 "letterSpacing": "0.08em", "color": COLORS["text_secondary"],
-                 "marginTop": "20px", "marginBottom": "10px"}),
+        # ── Charts Row ─────────────────────────────────────────
+        dbc.Row([
+            dbc.Col([
+                html.Div([
+                    html.Span("Plan vs Actual", style={
+                        "fontSize": "0.78rem", "fontWeight": "600",
+                        "color": COLORS["text_secondary"], "letterSpacing": "0.04em",
+                    }),
+                ], style={"padding": "14px 16px 0", "marginBottom": "-4px"}),
+                dcc.Graph(figure=pva_fig, config={"displayModeBar": False}),
+            ], md=8, className="mb-3", style={
+                "background": COLORS["card"], "border": f"1px solid {COLORS['border']}",
+                "borderRadius": "10px", "overflow": "hidden",
+                "marginRight": "0",
+            }),
+            dbc.Col([
+                html.Div([
+                    html.Span("Scenario Radar", style={
+                        "fontSize": "0.78rem", "fontWeight": "600",
+                        "color": COLORS["text_secondary"], "letterSpacing": "0.04em",
+                    }),
+                ], style={"padding": "14px 16px 0", "marginBottom": "-4px"}),
+                dcc.Graph(figure=scenario_fig, config={"displayModeBar": False}),
+            ], md=4, className="mb-3", style={
+                "background": COLORS["card"], "border": f"1px solid {COLORS['border']}",
+                "borderRadius": "10px", "overflow": "hidden",
+            }),
+        ], className="g-3"),
+
+        # ── Action Queue ───────────────────────────────────────
+        html.Div([
+            html.Span("Action Queue", style={
+                "fontSize": "0.68rem", "fontWeight": "700", "letterSpacing": "0.09em",
+                "color": COLORS["text_secondary"], "textTransform": "uppercase",
+            }),
+            html.Span(f"{len(queue)} active", style={
+                "fontSize": "0.65rem", "color": COLORS["danger"],
+                "background": "rgba(239,68,68,0.1)", "border": "1px solid rgba(239,68,68,0.25)",
+                "borderRadius": "99px", "padding": "2px 9px", "fontWeight": "600",
+                "marginLeft": "10px",
+            }),
+        ], style={"display": "flex", "alignItems": "center", "marginBottom": "12px", "marginTop": "4px"}),
+        dbc.Row([dbc.Col(_risk_badge(r), md=4, className="mb-3") for r in queue]),
+
+        # ── AI Recommendations ─────────────────────────────────
+        html.Div([
+            html.I(className="bi bi-lightning-charge-fill",
+                   style={"color": COLORS["primary"], "fontSize": "0.75rem", "marginRight": "7px"}),
+            html.Span("AI Recommendations", style={
+                "fontSize": "0.68rem", "fontWeight": "700", "letterSpacing": "0.09em",
+                "color": COLORS["text_secondary"], "textTransform": "uppercase",
+            }),
+        ], style={"display": "flex", "alignItems": "center", "marginBottom": "12px", "marginTop": "8px"}),
+
         dbc.Row([
             dbc.Col(ai_recommendation_card(
                 "Increase safety stock by 12% in North region to reduce stockout risk from 3.8% to 1.2%.",
@@ -106,6 +193,5 @@ def update_executive_page(filter_data):
             dbc.Col(ai_recommendation_card(
                 "Defer 3 low-margin Portable SKUs in South to free 320 capacity hours for high-margin Split units.",
                 "+$180K margin, no service impact", confidence=0.71), md=4),
-        ]),
+        ], className="g-3"),
     ])
-

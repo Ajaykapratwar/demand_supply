@@ -12,38 +12,47 @@ _SC = {"success": COLORS["success"], "warning": COLORS["warning"], "danger": COL
 _abc_color = {"A": COLORS["danger"], "B": COLORS["warning"], "C": COLORS["success"]}
 
 def _ss_metric(label, value):
-    return dbc.Col(html.Div([
-        html.Div(label, style={"fontSize": "0.72rem", "color": COLORS["text_secondary"],
+    return html.Div([
+        html.Div(label, style={"fontSize": "0.72rem", "color": "var(--text-2)",
                                "fontWeight": "600", "letterSpacing": "0.06em"}),
-        html.Div(value, style={"fontSize": "1.5rem", "fontWeight": "700", "color": COLORS["text_primary"]}),
-    ], style={"backgroundColor": COLORS["surface"], "borderRadius": "8px",
-               "padding": "12px 16px", "border": f"1px solid {COLORS['border']}"}),
-    xs=12, sm=4, className="mb-2")
+        html.Div(value, style={"fontSize": "1.5rem", "fontWeight": "700", "color": "var(--text-1)"}),
+    ], className="col-span-4 chart-card", style={"padding": "12px 16px"})
 
 layout = html.Div([
-    html.H5("Inventory Optimization", style={"color": COLORS["text_primary"], "fontWeight": "700", "marginBottom": "4px"}),
-    html.Div("Geographic inventory • Service-inventory scatter • Safety stock simulator",
-             style={"color": COLORS["text_secondary"], "fontSize": "0.83rem", "marginBottom": "20px"}),
-    dbc.Row([
-        dbc.Col(dcc.Loading(dcc.Graph(id="inventory-geo-chart", config={"displayModeBar": False}), type="dot"), md=6, className="mb-3"),
-        dbc.Col(dcc.Loading(dcc.Graph(id="inventory-svi-chart", config={"displayModeBar": False}), type="dot"), md=6, className="mb-3"),
-    ]),
-    dbc.Card([
-        dbc.CardHeader(html.Span("SAFETY STOCK SIMULATOR",
-            style={"fontSize": "0.75rem", "fontWeight": "700", "letterSpacing": "0.08em",
-                   "color": COLORS["text_secondary"]}),
-            style={"backgroundColor": COLORS["surface"], "borderBottom": f"1px solid {COLORS['border']}"}),
-        dbc.CardBody([
+    html.Div([
+        html.Div([
+            html.H5("Inventory Optimization", style={
+                "color": COLORS["text_primary"], "fontWeight": "700",
+                "fontSize": "1.1rem", "margin": "0", "letterSpacing": "-0.01em",
+            }),
+            html.Div("Geographic inventory · Service-inventory scatter · Safety stock simulator",
+                     style={"color": COLORS["text_secondary"], "fontSize": "0.8rem", "marginTop": "2px"}),
+        ]),
+    ], style={"display": "flex", "justifyContent": "space-between",
+              "alignItems": "center", "marginBottom": "20px"}),
+    html.Div([
+        html.Div(dcc.Loading(dcc.Graph(id="inventory-geo-chart", config={"displayModeBar": False}), type="dot"), className="col-span-6 chart-card"),
+        html.Div(dcc.Loading(dcc.Graph(id="inventory-svi-chart", config={"displayModeBar": False}), type="dot"), className="col-span-6 chart-card"),
+    ], className="dashboard-grid mb-4"),
+    html.Div([
+        html.Div([
+            html.Span("Safety Stock Simulator", style={
+                "fontSize": "0.78rem", "fontWeight": "700",
+                "color": COLORS["text_secondary"], "letterSpacing": "0.06em",
+                "textTransform": "uppercase",
+            }),
+        ], style={"padding": "14px 16px", "borderBottom": f"1px solid {COLORS['border']}"}),
+        html.Div([
             html.Div([
                 html.Span("Target Service Level: ", style={"color": COLORS["text_secondary"], "fontSize": "0.83rem"}),
                 html.Span(id="ss-level-display", style={"color": COLORS["primary"], "fontWeight": "700"}),
-            ], style={"marginBottom": "12px"}),
+            ], style={"marginBottom": "14px"}),
             dcc.Slider(id="ss-slider", min=0.85, max=0.99, step=0.01, value=0.95,
                        marks={v: f"{int(v*100)}%" for v in [0.85, 0.90, 0.95, 0.98, 0.99]}),
             dcc.Loading(html.Div(id="ss-output", style={"marginTop": "20px"}), type="dot"),
-        ], style={"backgroundColor": COLORS["card"]}),
-    ], style={"border": f"1px solid {COLORS['border']}", "borderRadius": "10px"}),
-])
+        ], style={"padding": "16px", "backgroundColor": COLORS["card"]}),
+    ], className="chart-card"),
+], className="page-wrapper")
 
 @callback(
     Output("inventory-geo-chart", "figure"),
@@ -107,11 +116,11 @@ def update_inventory(filter_data, service_level):
 
     # 3. Safety Stock Simulator
     res = get_safety_stock_sim(service_level, region, category)
-    ss_display = dbc.Row([
+    ss_display = html.Div([
         _ss_metric("Safety Stock", f"{res['safety_stock_units']:,} units"),
         _ss_metric("Working Capital", f"${res['working_capital_usd']:,}"),
         _ss_metric("Stockout Prob", f"{res['stockout_prob']:.1%}")
-    ])
+    ], className="dashboard-grid")
     
     ss_level_text = f"{service_level:.0%}"
 

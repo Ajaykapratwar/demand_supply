@@ -5,14 +5,16 @@ Layout shell (blueprint §3.6):
 """
 import dash
 import dash_bootstrap_components as dbc
-from dash import dcc, html, Input, Output, State, callback, ctx, no_update
+from dash import dcc, html, Input, Output, State, callback, ctx, no_update, MATCH, ALL
 
 from config import COLORS, USERS
-from components.navbar import build_navbar, build_sidebar
+from components.navbar import build_topbar, build_sidebar
 from components.copilot import build_copilot_panel, _CANNED_RESPONSES, _response_card
 from components.approval_drawer import approval_drawer_layout, register_approval_callbacks
 from components.collaboration import get_presence_indicators, sop_wizard_modal, register_collaboration_callbacks
 from components.insight_feed import insight_feed_layout
+import requests
+import datetime
 
 # ── App Init ──────────────────────────────────────────────────────────────────
 app = dash.Dash(
@@ -40,70 +42,92 @@ app.layout = html.Div([
 
     # Login Overlay
     html.Div(id="login-overlay", style={"display": "flex", "justifyContent": "center", "alignItems": "center", "height": "100vh", "backgroundColor": COLORS["background"]}, children=[
-        html.Div(style={"padding": "40px", "backgroundColor": COLORS["surface"], "borderRadius": "12px", "width": "400px", "boxShadow": "0 8px 32px rgba(0,0,0,0.5)"}, children=[
-            html.H3("PlanIQ Login", style={"color": COLORS["text_primary"], "marginBottom": "24px"}),
-            dbc.Input(id="login-username", placeholder="Username (e.g. scmanager)", type="text", style={"marginBottom": "16px", "backgroundColor": COLORS["background"], "color": COLORS["text_primary"], "border": "none"}),
-            dbc.Input(id="login-password", placeholder="Password (e.g. sc123)", type="password", style={"marginBottom": "24px", "backgroundColor": COLORS["background"], "color": COLORS["text_primary"], "border": "none"}),
-            dbc.Button("Login", id="login-btn", color="primary", style={"width": "100%", "marginBottom": "16px"}),
-            html.Div(id="login-error", style={"marginTop": "16px"}),
+        html.Div(style={
+            "padding": "40px",
+            "backgroundColor": COLORS["surface"],
+            "borderRadius": "14px",
+            "width": "380px",
+            "border": f"1px solid {COLORS['border']}",
+            "boxShadow": "0 24px 64px rgba(0,0,0,0.6)",
+        }, children=[
+            # Logo
+            html.Div([
+                html.Div(style={
+                    "width": "40px", "height": "40px", "borderRadius": "10px",
+                    "background": "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                    "display": "flex", "alignItems": "center", "justifyContent": "center",
+                    "marginRight": "12px",
+                }, children=html.Span("P", style={"color": "#fff", "fontWeight": "800", "fontSize": "1.2rem"})),
+                html.Div([
+                    html.Div("PlanIQ", style={"fontWeight": "800", "fontSize": "1.1rem", "color": COLORS["text_primary"], "letterSpacing": "-0.01em"}),
+                    html.Div("AI Planning Dashboard", style={"fontSize": "0.75rem", "color": COLORS["text_secondary"]}),
+                ]),
+            ], style={"display": "flex", "alignItems": "center", "marginBottom": "32px"}),
+
+            html.Div("Username", style={"fontSize": "0.72rem", "fontWeight": "700", "color": COLORS["text_secondary"], "letterSpacing": "0.07em", "textTransform": "uppercase", "marginBottom": "6px"}),
+            dbc.Input(id="login-username", placeholder="e.g. scmanager", type="text",
+                      style={"marginBottom": "16px", "backgroundColor": COLORS["card"],
+                             "color": COLORS["text_primary"], "border": f"1px solid {COLORS['border']}",
+                             "borderRadius": "7px", "fontSize": "0.85rem", "padding": "10px 14px"}),
+            html.Div("Password", style={"fontSize": "0.72rem", "fontWeight": "700", "color": COLORS["text_secondary"], "letterSpacing": "0.07em", "textTransform": "uppercase", "marginBottom": "6px"}),
+            dbc.Input(id="login-password", placeholder="e.g. sc123", type="password",
+                      style={"marginBottom": "24px", "backgroundColor": COLORS["card"],
+                             "color": COLORS["text_primary"], "border": f"1px solid {COLORS['border']}",
+                             "borderRadius": "7px", "fontSize": "0.85rem", "padding": "10px 14px"}),
+            dbc.Button([html.I(className="bi bi-box-arrow-in-right", style={"marginRight": "8px"}), "Sign In"],
+                       id="login-btn", color="primary",
+                       style={"width": "100%", "fontWeight": "700", "borderRadius": "7px",
+                              "padding": "10px", "fontSize": "0.88rem"}),
+            html.Div(id="login-error", style={"marginTop": "14px"}),
         ])
     ]),
 
     # Dashboard Shell
     html.Div(id="dashboard-shell", style={"display": "none"}, children=[
-        # Top Nav
-    build_navbar(),
-
-    # Body
-    html.Div([
-        # Left Sidebar
-        build_sidebar(),
-        
-        # UI overlays (Modals, Drawers)
-        sop_wizard_modal(),
-        approval_drawer_layout(),
-
-        # Main content
-        html.Div(
-            dash.page_container,
-            id="page-content",
-            style={
-                "backgroundColor": COLORS["background"],
-                "flex": "1",
-                "overflowY": "auto",
-                "padding": "24px 28px",
-                "minHeight": "calc(100vh - 60px)",
-            },
-        ),
-
-        # Right Copilot panel
-        html.Div(
-            id="copilot-wrapper",
-            children=build_copilot_panel(),
-            style={"display": "flex"},
-        ),
-    ], style={
-        "display": "flex",
-        "flex": "1",
-        "overflow": "hidden",
-        "height": "calc(100vh - 60px)",
-    }),
+        html.Div(id="app-shell", children=[
+            # Left Sidebar
+            build_sidebar(),
+            
+            # Main Area
+            html.Div(id="main-area", children=[
+                # Top Navbar
+                build_topbar(),
+                
+                # UI overlays (Modals, Drawers)
+                sop_wizard_modal(),
+                approval_drawer_layout(),
+                
+                # Body Content
+                html.Div(id="page-content", children=[
+                    dash.page_container,
+                ]),
+            ]),
+            
+            # Right Copilot Panel (slides out inside main-area or app-shell)
+            html.Div(
+                id="copilot-wrapper",
+                children=build_copilot_panel(),
+                style={"display": "none", "height": "100vh"},
+            ),
+        ]),
 
         # Copilot FAB toggle
         dbc.Button(
-            "🤖", id="copilot-toggle-btn", color="primary", size="sm",
+            html.I(className="bi bi-stars"),
+            id="copilot-toggle-btn", color="primary", size="sm",
             style={
-                "position": "fixed", "right": "16px", "bottom": "24px", "zIndex": "999",
+                "position": "fixed", "right": "24px", "bottom": "24px", "zIndex": "999",
                 "borderRadius": "50%", "width": "48px", "height": "48px",
-                "fontSize": "1.3rem", "boxShadow": "0 4px 16px rgba(88,166,255,0.4)",
+                "fontSize": "18px",
+                "background": "linear-gradient(135deg, var(--primary), var(--accent))",
+                "border": "none",
+                "boxShadow": "0 4px 20px rgba(79, 110, 247, 0.4)",
                 "display": "flex", "alignItems": "center", "justifyContent": "center",
+                "padding": "0",
             },
         ),
-        
-        # Presence Indicators (floating top right below nav)
-        html.Div(get_presence_indicators(), style={"position": "fixed", "top": "70px", "right": "20px", "zIndex": "998"})
     ])
-], style={"backgroundColor": COLORS["background"], "fontFamily": "Inter, sans-serif"})
+], id="root-container")
 
 
 # ── Callbacks ─────────────────────────────────────────────────────────────────
@@ -127,9 +151,9 @@ register_collaboration_callbacks(app)
 )
 def handle_auth(login_clicks, logout_clicks, username, password, auth):
     triggered = ctx.triggered_id
-    SHOW = {"display": "block"}
+    SHOW = {"display": "flex", "flexDirection": "column"}
     HIDE = {"display": "none"}
-    SHOW_FLEX = {"display": "flex", "justifyContent": "center", "alignItems": "center", "height": "100vh", "backgroundColor": COLORS["background"]}
+    SHOW_FLEX = {"display": "flex", "justifyContent": "center", "alignItems": "center", "height": "100vh"}
 
     if triggered == "logout-btn":
         return (
@@ -168,14 +192,28 @@ def update_global_store(horizon, region, category, current):
     return current
 
 
+
+
+
 @callback(
     Output("copilot-wrapper", "style"),
     Output("copilot-open-store", "data"),
     Input("copilot-toggle-btn", "n_clicks"),
+    Input({"type": "kpi-copilot-btn", "index": ALL}, "n_clicks"),
     State("copilot-open-store", "data"),
     prevent_initial_call=True,
 )
-def toggle_copilot(n, is_open):
+def toggle_copilot(toggle_n, kpi_n_clicks, is_open):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return no_update
+    
+    trigger = ctx.triggered[0]["prop_id"]
+    
+    # If triggered by a KPI button, always open the drawer
+    if "kpi-copilot-btn" in trigger:
+        return {"display": "flex"}, True
+        
     new_open = not is_open
     display_style = {"display": "flex"} if new_open else {"display": "none"}
     return display_style, new_open
@@ -187,35 +225,99 @@ def toggle_copilot(n, is_open):
     Input("quick-stockout", "n_clicks"),
     Input("quick-forecast", "n_clicks"),
     Input("quick-scenario", "n_clicks"),
+    Input({"type": "kpi-copilot-btn", "index": ALL}, "n_clicks"),
     State("copilot-input", "value"),
+    State("global-filter-store", "data"),
+    State("ai-collaboration-mode", "value"),
     prevent_initial_call=True,
 )
-def handle_copilot_query(ask_clicks, stockout_clicks, forecast_clicks, scenario_clicks, query):
+def handle_copilot_query(ask_clicks, stockout_clicks, forecast_clicks, scenario_clicks, kpi_clicks, query, filter_store, ai_mode):
     ctx = dash.callback_context
     if not ctx.triggered:
         return [_response_card(_CANNED_RESPONSES["default"])]
 
     trigger = ctx.triggered[0]["prop_id"]
+    active_q = query
     if "stockout" in trigger:
-        resp = _CANNED_RESPONSES["stockout"]
+        active_q = "What is the stockout risk?"
     elif "forecast" in trigger:
-        resp = _CANNED_RESPONSES["forecast"]
+        active_q = "What is the forecast accuracy?"
     elif "scenario" in trigger:
-        resp = _CANNED_RESPONSES["scenario"]
-    elif query:
-        # Keyword matching for free-text queries
-        q = query.lower()
-        if any(w in q for w in ["stock", "shortage", "out"]):
-            resp = _CANNED_RESPONSES["stockout"]
-        elif any(w in q for w in ["forecast", "accuracy", "mape", "wape"]):
-            resp = _CANNED_RESPONSES["forecast"]
-        elif any(w in q for w in ["scenario", "surge", "demand", "simulate"]):
-            resp = _CANNED_RESPONSES["scenario"]
+        active_q = "Run demand surge +20% scenario"
+    elif "kpi-copilot-btn" in trigger:
+        import json
+        try:
+            kpi_index = json.loads(trigger.split(".")[0])["index"]
+            KPI_COPILOT_PROMPTS = {
+              "EVA":              "Explain our current Economic Value Added and what's driving it.",
+              "ROIC":             "What is our Return on Invested Capital and how does it compare to target?",
+              "Cash-to-Cash":     "Show me cash-to-cash cycle trend and what's causing any variance.",
+              "Gross Margin":     "Why did gross margin change this period? Break down the key drivers.",
+              "Carrying Cost":    "What is our inventory carrying cost and where are the biggest overstock risks?",
+              "Logistics % Rev":  "Show our supply chain cost as % of sales vs industry benchmark.",
+            }
+            active_q = KPI_COPILOT_PROMPTS.get(kpi_index, f"Explain the current status of {kpi_index}.")
+        except:
+            pass
+        
+    if not active_q:
+        return [_response_card(_CANNED_RESPONSES["default"])]
+        
+    # Call the backend Copilot API (Now connected to Groq)
+    try:
+        from data.data_loader import get_executive_kpis
+        import requests
+        
+        region = filter_store.get("region", "Global")
+        kpis = get_executive_kpis(region=region, category="All")
+            
+        context_str = f"Here is the current HVAC dashboard data for Region: {region}:\n"
+        for k, v in kpis.items():
+            context_str += f"- {k}: {v.get('value')} {v.get('unit', '')} (Target: {v.get('target')})\n"
+            
+        role_instructions = {
+            "analyst": "You are a deeply analytical Data Analyst. Focus strictly on numbers, trends, statistical variances, and root causes. Be extremely detailed with figures.",
+            "decision_maker": "You are a strategic Executive Decision Maker. Focus on bottom-line impact, risks, and high-level actionable recommendations. Be concise and business-focused.",
+            "coach": "You are a helpful Supply Chain Coach. Explain the concepts behind the metrics, ask guiding questions to the user, and suggest what they should look into next to improve their skills."
+        }
+        persona = role_instructions.get(ai_mode, role_instructions["decision_maker"])
+            
+        groq_payload = {
+            "model": "llama-3.3-70b-versatile", 
+            "messages": [
+                {"role": "system", "content": f"{persona} Provide concise, insightful answers based on the provided data context. Keep responses under 4 sentences."},
+                {"role": "user", "content": f"Context:\n{context_str}\n\nUser query: {active_q}"}
+            ]
+        }
+        
+        headers = {
+            
+            "Authorization": "Bearer API_KEY",
+            "Content-Type": "application/json"
+        }
+        
+        res = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=groq_payload, timeout=15)
+        
+        if res.status_code == 200:
+            data = res.json()
+            reply = data["choices"][0]["message"]["content"]
+            model_used = data["model"]
+            resp = {
+                "text": f"{reply}\n\n*Tools used: Live Dashboard Data*\n*Model: {model_used}*",
+                "badge_color": COLORS["primary"]
+            }
         else:
-            resp = _CANNED_RESPONSES["default"]
-    else:
-        resp = _CANNED_RESPONSES["default"]
-
+            resp = {
+                "text": f"Error connecting to AI: {res.text}",
+                "badge_color": COLORS["danger"]
+            }
+            
+    except Exception as e:
+        resp = {
+            "text": f"Backend Error: {str(e)}",
+            "badge_color": COLORS["danger"]
+        }
+        
     return [_response_card(resp)]
 
 

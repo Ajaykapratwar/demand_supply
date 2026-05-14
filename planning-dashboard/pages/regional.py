@@ -31,41 +31,51 @@ def _region_card(row):
     style={"backgroundColor": COLORS["card"], "border": f"1px solid {COLORS['border']}", "borderRadius": "8px"})
 
 layout = html.Div([
-    html.H5("Regional Planning", style={"color": COLORS["text_primary"], "fontWeight": "700", "marginBottom": "4px"}),
-    html.Div("Choropleth OTIF map • Region vs plan • Local scenario adjustments",
-             style={"color": COLORS["text_secondary"], "fontSize": "0.83rem", "marginBottom": "20px"}),
-    dcc.Loading(id="loading-regional-cards", type="default", color=COLORS["primary"],
+    html.Div([
+        html.Div([
+            html.H5("Regional Planning", style={
+                "color": COLORS["text_primary"], "fontWeight": "700",
+                "fontSize": "1.1rem", "margin": "0", "letterSpacing": "-0.01em",
+            }),
+            html.Div("Choropleth OTIF map · Region vs plan · Local scenario adjustments",
+                     style={"color": COLORS["text_secondary"], "fontSize": "0.8rem", "marginTop": "2px"}),
+        ]),
+    ], style={"display": "flex", "justifyContent": "space-between",
+              "alignItems": "center", "marginBottom": "20px"}),
+    dcc.Loading(id="loading-regional-cards", type="dot", color=COLORS["primary"],
                 children=html.Div(id="regional-cards-container", className="mb-3")),
-    dbc.Row([
-        dbc.Col(dcc.Loading(id="loading-choro", type="default", color=COLORS["primary"],
-                            children=dcc.Graph(id="choro-map", config={"displayModeBar": False})), md=7, className="mb-3"),
-        dbc.Col(dcc.Loading(id="loading-rvp", type="default", color=COLORS["primary"],
-                            children=dcc.Graph(id="rvp-bar", config={"displayModeBar": False})), md=5, className="mb-3"),
-    ]),
-    dbc.Card([
-        dbc.CardHeader(html.Span("LOCAL SCENARIO ADJUSTMENTS",
-            style={"fontSize": "0.72rem", "fontWeight": "700", "letterSpacing": "0.08em",
-                   "color": COLORS["text_secondary"]}),
-            style={"backgroundColor": COLORS["surface"], "borderBottom": f"1px solid {COLORS['border']}"}),
-        dbc.CardBody([
-            dbc.Row([
-                dbc.Col([html.Div("North Demand Adjustment", style={"fontSize":"0.82rem","color":COLORS["text_secondary"],"marginBottom":"4px"}),
+    html.Div([
+        html.Div(dcc.Loading(id="loading-choro", type="dot", color=COLORS["primary"],
+                            children=dcc.Graph(id="choro-map", responsive=True, config={"displayModeBar": False}, style={"width": "100%", "height": "100%"})), className="col-span-7 chart-card"),
+        html.Div(dcc.Loading(id="loading-rvp", type="dot", color=COLORS["primary"],
+                            children=dcc.Graph(id="rvp-bar", responsive=True, config={"displayModeBar": False}, style={"width": "100%", "height": "100%"})), className="col-span-5 chart-card"),
+    ], className="dashboard-grid mb-4"),
+    html.Div([
+        html.Div("LOCAL SCENARIO ADJUSTMENTS", className="panel-header",
+                 style={"padding": "14px 16px", "borderBottom": f"1px solid {COLORS['border']}"}),
+        html.Div([
+            html.Div([
+                html.Div([html.Div("North Demand Adjustment", style={"fontSize":"0.82rem","color":COLORS["text_secondary"],"marginBottom":"4px"}),
                          dcc.Slider(id="region-north-slider", min=-20, max=30, step=5, value=0,
-                                    marks={v: f"{v:+d}%" for v in [-20,-10,0,10,20,30]})], md=3),
-                dbc.Col([html.Div("South Demand Adjustment", style={"fontSize":"0.82rem","color":COLORS["text_secondary"],"marginBottom":"4px"}),
+                                    marks={v: f"{v:+d}%" for v in [-20,-10,0,10,20,30]})],
+                         className="col-span-3 chart-card"),
+                html.Div([html.Div("South Demand Adjustment", style={"fontSize":"0.82rem","color":COLORS["text_secondary"],"marginBottom":"4px"}),
                          dcc.Slider(id="region-south-slider", min=-20, max=30, step=5, value=0,
-                                    marks={v: f"{v:+d}%" for v in [-20,-10,0,10,20,30]})], md=3),
-                dbc.Col([html.Div("East Demand Adjustment", style={"fontSize":"0.82rem","color":COLORS["text_secondary"],"marginBottom":"4px"}),
+                                    marks={v: f"{v:+d}%" for v in [-20,-10,0,10,20,30]})],
+                         className="col-span-3 chart-card"),
+                html.Div([html.Div("East Demand Adjustment", style={"fontSize":"0.82rem","color":COLORS["text_secondary"],"marginBottom":"4px"}),
                          dcc.Slider(id="region-east-slider", min=-20, max=30, step=5, value=0,
-                                    marks={v: f"{v:+d}%" for v in [-20,-10,0,10,20,30]})], md=3),
-                dbc.Col([html.Div("West Demand Adjustment", style={"fontSize":"0.82rem","color":COLORS["text_secondary"],"marginBottom":"4px"}),
+                                    marks={v: f"{v:+d}%" for v in [-20,-10,0,10,20,30]})],
+                         className="col-span-3 chart-card"),
+                html.Div([html.Div("West Demand Adjustment", style={"fontSize":"0.82rem","color":COLORS["text_secondary"],"marginBottom":"4px"}),
                          dcc.Slider(id="region-west-slider", min=-20, max=30, step=5, value=0,
-                                    marks={v: f"{v:+d}%" for v in [-20,-10,0,10,20,30]})], md=3),
-            ]),
+                                    marks={v: f"{v:+d}%" for v in [-20,-10,0,10,20,30]})],
+                         className="col-span-3 chart-card"),
+            ], className="dashboard-grid"),
             html.Div(id="region-scenario-output", style={"marginTop": "16px"}),
-        ], style={"backgroundColor": COLORS["card"]}),
-    ], style={"border": f"1px solid {COLORS['border']}", "borderRadius": "10px"}),
-])
+        ], style={"padding": "16px", "backgroundColor": COLORS["card"]}),
+    ], className="chart-card"),
+], className="page-wrapper")
 
 @callback(
     Output("regional-cards-container", "children"),
@@ -85,7 +95,7 @@ def update_regional_page(filter_data):
     if _reg.empty:
         cards = html.Div("No regional data available for selected filters.", style={"color": COLORS["text_secondary"]})
     else:
-        cards = dbc.Row([dbc.Col(_region_card(_reg.iloc[i]), xs=6, sm=4, md=3, className="mb-3") for i in range(len(_reg))])
+        cards = html.Div([_region_card(_reg.iloc[i]) for i in range(len(_reg))], className="kpi-grid mb-4")
         
     # 2. Choropleth Map
     if _reg.empty:
@@ -106,7 +116,7 @@ def update_regional_page(filter_data):
             paper_bgcolor=COLORS["card"],
             font=dict(color=COLORS["text_primary"], family="Inter, sans-serif"),
             title=dict(text="Regional OTIF Performance", font=dict(color=COLORS["text_primary"], size=13)),
-            height=320, margin=dict(l=0, r=0, t=40, b=0),
+            height=420, margin=dict(l=0, r=0, t=40, b=0),
             geo=dict(showframe=False, showcoastlines=True, coastlinecolor=COLORS["border"],
                      showland=True, landcolor=COLORS["surface"],
                      showocean=True, oceancolor=COLORS["background"],
@@ -124,7 +134,7 @@ def update_regional_page(filter_data):
             marker_color=[COLORS["success"] if a >= p else COLORS["danger"]
                           for a, p in zip(_rvp["actual"], _rvp["plan"])], opacity=0.88))
     
-    apply_dark_layout(_rvp_fig, title="Region vs Plan ($M)", height=320, barmode="group",
+    apply_dark_layout(_rvp_fig, title="Region vs Plan ($M)", height=420, barmode="group",
                       yaxis=dict(title="Units", gridcolor=COLORS["border"]),
                       legend=dict(**LEGEND_STYLE, orientation="h", y=1.1))
 
