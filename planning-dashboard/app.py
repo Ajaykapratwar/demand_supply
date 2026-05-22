@@ -16,6 +16,7 @@ from components.insight_feed import insight_feed_layout
 from services.briefing_generator import trigger_executive_briefing
 import requests
 import datetime
+import os
 
 # ── App Init ──────────────────────────────────────────────────────────────────
 app = dash.Dash(
@@ -296,7 +297,7 @@ def handle_copilot_query(ask_clicks, stockout_clicks, forecast_clicks, scenario_
         
         headers = {
             
-            "Authorization": "Bearer API_KEY",
+            "Authorization": f"Bearer {os.environ.get('GROQ_API_KEY', '')}",
             "Content-Type": "application/json"
         }
         

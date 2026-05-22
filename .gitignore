@@ -1,22 +1,58 @@
-hvac_forecast_system/__pycache__
-hvac_forecast_system/.pytest_cache
-hvac_forecast_system/.venv
-hvac_forecast_system/.env
-hvac_forecast_system/src/__pycache__
-hvac_control_tower/__pycache__
-hvac_control_tower/.venv
-hvac_control_tower/.env
-hvac_control_tower/src/__pycache__
-planning-dashboard/__pycache__
-planning-dashboard/.venv
-planning-dashboard/.env
-planning-dashboard/src/__pycache__
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
 venv/
-venv/*
+env/
+.venv/
+.env
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Data and logs
+data/
+*.log
+*.csv
+*.db
+*.sqlite3
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+.tox/
+
+# Node/Frontend
+node_modules/
+.next/
+out/
+build/
+dist/
+.npm/
+
+# Project Specific Overrides
 !venv/README.md
 !venv/pyvenv.cfg
-venv/Lib/
-venv/Include/
-venv/Scripts/
-venv/share/
-venv/bin/
